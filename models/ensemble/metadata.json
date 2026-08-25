@@ -1,0 +1,19 @@
+{
+  "model_name": "ensemble",
+  "model_version": "ensemble_v1",
+  "selected_winner": "Ensemble",
+  "rf_weight": 0.45,
+  "xgb_weight": 0.55,
+  "validation_metrics": {
+    "mae": 214.69,
+    "rmse": 291.41,
+    "r2": 0.9985,
+    "mape": 2.37
+  },
+  "test_metrics": {
+    "mae": 225.46,
+    "rmse": 307.94,
+    "r2": 0.998,
+    "mape": 2.61
+  }
+}

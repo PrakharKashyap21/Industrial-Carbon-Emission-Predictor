@@ -1,0 +1,21 @@
+[
+  "plant_id",
+  "electricity_consumption_kwh",
+  "diesel_consumption_liters",
+  "natural_gas_consumption_m3",
+  "production_quantity",
+  "raw_material_consumption_kg",
+  "machine_runtime_hours",
+  "temperature_c",
+  "pressure_bar",
+  "previous_co2_emission_kg",
+  "energy_intensity",
+  "fuel_intensity",
+  "gas_intensity",
+  "raw_material_intensity",
+  "machine_utilization",
+  "day",
+  "month",
+  "quarter",
+  "day_of_week"
+]

@@ -1,0 +1,4 @@
+Model,MAE,RMSE,R²,MAPE (%),Status
+Random Forest,220.18,277.73,0.9984,2.87,Candidate
+XGBoost,300.42,439.86,0.996,3.0,Candidate
+Ensemble (RF+XGB),225.46,307.94,0.998,2.61,Selected Winner

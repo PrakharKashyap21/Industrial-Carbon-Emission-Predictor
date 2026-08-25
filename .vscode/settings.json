@@ -1,0 +1,12 @@
+{
+  "python.defaultInterpreterPath": "${workspaceFolder}/backend/.venv/bin/python",
+  "python.analysis.extraPaths": [
+    "${workspaceFolder}/backend",
+    "./backend",
+    "backend"
+  ],
+  "python.analysis.autoSearchPaths": true,
+  "pyright.venvPath": "${workspaceFolder}/backend",
+  "pyright.venv": ".venv",
+  "uv.path": "~/.local/bin/uv"
+}

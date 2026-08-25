@@ -1,0 +1,26 @@
+{
+  "venvPath": "backend",
+  "venv": ".venv",
+  "extraPaths": [
+    "backend",
+    "./backend"
+  ],
+  "executionEnvironments": [
+    {
+      "root": "backend",
+      "extraPaths": [
+        "backend",
+        "."
+      ]
+    }
+  ],
+  "reportGeneralTypeIssues": false,
+  "reportAttributeAccessIssue": false,
+  "reportOptionalMemberAccess": false,
+  "reportOptionalSubscript": false,
+  "reportOptionalOperand": false,
+  "reportArgumentType": false,
+  "reportReturnType": false,
+  "reportCallIssue": false,
+  "reportPossiblyUnboundVariable": false
+}

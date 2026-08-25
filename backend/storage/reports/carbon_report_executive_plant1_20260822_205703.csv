@@ -1,0 +1,17 @@
+# Industrial Carbon Intelligence Platform Report
+# Report Title,Executive Industrial Carbon Performance Report
+# Plant,Apex Steel Works
+# Period,2026-07-23 to 2026-08-22
+# Generated At,2026-08-22 20:57:03 UTC
+
+KPI Metric Indicator,Measured / Estimated Value,Unit
+Total Predicted CO2,125400.0,kg CO2
+Average CO2 per Reading,8500.0,kg CO2
+Total Production Output,82000.0,Units
+Emission Intensity,1.53,kg CO2 / Unit
+Average Electricity,9500.0,kWh
+Average Diesel Fuel,2100.0,Liters
+
+Insight Category,Severity,Title,Description
+General,WARNING,Operational Anomalies Identified,1 operational anomalies (emission spikes / parameter shifts) were logged.
+General,INFO,Optimization Search Potential,Automated constrained search runs identified an average model-estimated reduction potential of 10.0% across feasible operating configurations.

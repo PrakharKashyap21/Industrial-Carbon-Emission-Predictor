@@ -1,0 +1,78 @@
+{
+  "plant_id": {
+    "min": 1.0,
+    "max": 5.0
+  },
+  "electricity_consumption_kwh": {
+    "min": 4528.3,
+    "max": 27260.9
+  },
+  "diesel_consumption_liters": {
+    "min": 201.4,
+    "max": 1520.8
+  },
+  "natural_gas_consumption_m3": {
+    "min": 744.3,
+    "max": 5041.0
+  },
+  "production_quantity": {
+    "min": 829.3,
+    "max": 5217.3
+  },
+  "raw_material_consumption_kg": {
+    "min": 1693.9,
+    "max": 11605.8
+  },
+  "machine_runtime_hours": {
+    "min": 14.0,
+    "max": 23.5
+  },
+  "temperature_c": {
+    "min": 18.5,
+    "max": 41.9
+  },
+  "pressure_bar": {
+    "min": 4.53,
+    "max": 9.73
+  },
+  "previous_co2_emission_kg": {
+    "min": 2145.0,
+    "max": 24553.8
+  },
+  "energy_intensity": {
+    "min": 3.8383954838196703,
+    "max": 7.845749671608182
+  },
+  "fuel_intensity": {
+    "min": 0.1993836760555267,
+    "max": 0.3905250371170198
+  },
+  "gas_intensity": {
+    "min": 0.8147179177567585,
+    "max": 1.535935447551135
+  },
+  "raw_material_intensity": {
+    "min": 1.7386403912951016,
+    "max": 2.8103302683430287
+  },
+  "machine_utilization": {
+    "min": 0.5833333333333334,
+    "max": 0.9791666666666666
+  },
+  "day": {
+    "min": 1.0,
+    "max": 18.0
+  },
+  "month": {
+    "min": 1.0,
+    "max": 1.0
+  },
+  "quarter": {
+    "min": 1.0,
+    "max": 1.0
+  },
+  "day_of_week": {
+    "min": 0.0,
+    "max": 6.0
+  }
+}
