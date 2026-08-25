@@ -1,7 +1,7 @@
 import axios from 'axios';
 
-// Obtain API Base URL from Vite environment variable with fallback
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
+// Obtain API Base URL from Vite environment variable with production Render fallback
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://industrial-carbon-backend.onrender.com/api';
 
 const apiClient = axios.create({
   baseURL: API_BASE_URL,

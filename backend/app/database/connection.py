@@ -11,9 +11,22 @@ def create_db_engine(db_url: str):
         with eng.connect():
             pass
         return eng
-    except OperationalError:
-        # Fallback to local SQLite file for seamless local development when PostgreSQL server is offline
-        fallback_url = "sqlite:///industrial_carbon.db"
+    except Exception as e:
+        # Fallback to local SQLite file for seamless deployment when PostgreSQL server is offline
+        import os
+        possible_paths = [
+            "industrial_carbon.db",
+            "backend/industrial_carbon.db",
+            os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "industrial_carbon.db")),
+            os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", "industrial_carbon.db")),
+        ]
+        chosen_db = "industrial_carbon.db"
+        for p in possible_paths:
+            if os.path.exists(p):
+                chosen_db = p
+                break
+        fallback_url = f"sqlite:///{chosen_db}"
+        print(f"[DB Connection Warning] Primary DB offline ({e}). Using database engine at {fallback_url}")
         return create_engine(fallback_url, echo=False, connect_args={"check_same_thread": False}, pool_pre_ping=True)
 
 engine = create_db_engine(settings.DATABASE_URL)
