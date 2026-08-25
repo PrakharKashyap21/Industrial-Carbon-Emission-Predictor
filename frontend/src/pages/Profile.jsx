@@ -9,39 +9,39 @@ export const Profile = () => {
 
   return (
     <div className="max-w-3xl mx-auto space-y-8 pb-12">
-      <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
-        <div className="flex items-center space-x-4 border-b border-slate-800 pb-4">
-          <div className="p-4 bg-cyan-950 text-cyan-400 rounded-2xl border border-cyan-800/80 font-extrabold text-xl font-mono">
+      <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-xs space-y-6">
+        <div className="flex items-center space-x-4 border-b border-slate-200 pb-5">
+          <div className="p-4 bg-gradient-to-tr from-cyan-600 to-blue-600 text-white rounded-2xl shadow-md shadow-cyan-600/20 font-extrabold text-2xl font-mono">
             {user.name?.charAt(0) || 'U'}
           </div>
           <div>
-            <h1 className="text-xl font-extrabold text-white">{user.name}</h1>
-            <p className="text-xs text-slate-400 font-mono">{user.email}</p>
+            <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900">{user.name}</h1>
+            <p className="text-xs text-slate-500 font-mono mt-0.5">{user.email}</p>
           </div>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs font-sans">
-          <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-1">
-            <span className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider block flex items-center">
-              <Shield className="w-3.5 h-3.5 mr-1 text-cyan-400" /> Assigned System Role
+          <div className="bg-slate-50 p-4.5 rounded-2xl border border-slate-200 space-y-1.5">
+            <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block flex items-center">
+              <Shield className="w-3.5 h-3.5 mr-1 text-cyan-600" /> Assigned System Role
             </span>
-            <div className="text-base font-extrabold text-cyan-300 font-mono">{user.role}</div>
+            <div className="text-base font-extrabold text-cyan-700 font-mono">{user.role}</div>
           </div>
 
-          <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-1">
-            <span className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider block flex items-center">
-              <Factory className="w-3.5 h-3.5 mr-1 text-emerald-400" /> Authorized Plant Scope
+          <div className="bg-slate-50 p-4.5 rounded-2xl border border-slate-200 space-y-1.5">
+            <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block flex items-center">
+              <Factory className="w-3.5 h-3.5 mr-1 text-emerald-600" /> Authorized Plant Scope
             </span>
-            <div className="text-base font-extrabold text-slate-200 font-mono">
+            <div className="text-base font-extrabold text-slate-800 font-mono">
               {user.plant_ids && user.plant_ids.length > 0 ? `Plant #${user.plant_ids.join(', #')}` : 'All Plants (Admin)'}
             </div>
           </div>
         </div>
 
-        <div className="pt-2 border-t border-slate-800 flex justify-end">
+        <div className="pt-2 border-t border-slate-200 flex justify-end">
           <button
             onClick={logout}
-            className="px-4 py-2 bg-rose-950 hover:bg-rose-900 text-rose-300 border border-rose-800 text-xs font-bold rounded-xl flex items-center space-x-1.5"
+            className="px-4 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold rounded-xl flex items-center space-x-1.5 transition-colors"
           >
             <LogOut className="w-4 h-4" />
             <span>Sign Out of Account</span>
