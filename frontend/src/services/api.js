@@ -1,7 +1,9 @@
 import axios from 'axios';
 
 // Obtain API Base URL from Vite environment variable with production Render fallback
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://industrial-carbon-emission-predictor-3.onrender.com/api';
+const rawBaseUrl = import.meta.env.VITE_API_BASE_URL || 'https://industrial-carbon-emission-predictor-3.onrender.com/api';
+const cleanBaseUrl = rawBaseUrl.replace(/\/+$/, '');
+const API_BASE_URL = cleanBaseUrl.endsWith('/api') ? cleanBaseUrl : `${cleanBaseUrl}/api`;
 
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
