@@ -17,33 +17,35 @@ export const EmissionIntensityChart = ({ trends }) => {
         <span className="text-[10px] font-mono text-slate-500">Carbon Efficiency Metric</span>
       </div>
 
-      <div className="space-y-3 pt-2">
-        <div className="h-56 w-full flex items-end justify-between space-x-1 sm:space-x-1.5 pt-12 pb-2 border-b border-slate-200 relative overflow-visible">
-          {trends.slice(-30).map((pt, idx) => {
-            const val = pt.co2_intensity;
-            const height = val !== null ? Math.min(100, Math.max(10, (val / maxVal) * 100)) : 0;
+      <div className="space-y-3 pt-2 overflow-hidden">
+        <div className="overflow-x-auto pb-2">
+          <div className="h-56 min-w-[500px] sm:min-w-full flex items-end justify-between space-x-1 sm:space-x-1.5 pt-12 pb-2 border-b border-slate-200 relative overflow-visible">
+            {trends.slice(-30).map((pt, idx) => {
+              const val = pt.co2_intensity;
+              const height = val !== null ? Math.min(100, Math.max(10, (val / maxVal) * 100)) : 0;
 
-            const isLeft = idx < 4;
-            const isRight = idx > trends.slice(-30).length - 5;
-            const tooltipPosClass = isLeft ? 'left-0' : isRight ? 'right-0' : 'left-1/2 -translate-x-1/2';
+              const isLeft = idx < 4;
+              const isRight = idx > trends.slice(-30).length - 5;
+              const tooltipPosClass = isLeft ? 'left-0' : isRight ? 'right-0' : 'left-1/2 -translate-x-1/2';
 
-            return (
-              <div key={idx} className="flex-1 flex flex-col items-center group relative h-full justify-end min-w-[12px]">
-                {/* Tooltip */}
-                <div className={`absolute top-0 ${tooltipPosClass} hidden group-hover:block z-50 bg-slate-900 text-white text-[11px] p-2.5 rounded-xl border border-slate-700 shadow-2xl whitespace-nowrap font-mono pointer-events-none`}>
-                  <span className="font-sans font-bold text-emerald-300 block border-b border-slate-700 pb-1 mb-1">{pt.timestamp}</span>
-                  Intensity: <strong className="text-emerald-400 font-bold">{val !== null ? `${val} kg/unit` : 'N/A'}</strong><br />
-                  Production: {pt.production_quantity.toLocaleString()} units
+              return (
+                <div key={idx} className="flex-1 flex flex-col items-center group relative h-full justify-end min-w-[10px]">
+                  {/* Tooltip */}
+                  <div className={`absolute top-0 ${tooltipPosClass} hidden group-hover:block z-50 bg-slate-900 text-white text-[11px] p-2.5 rounded-xl border border-slate-700 shadow-2xl whitespace-nowrap font-mono pointer-events-none`}>
+                    <span className="font-sans font-bold text-emerald-300 block border-b border-slate-700 pb-1 mb-1">{pt.timestamp}</span>
+                    Intensity: <strong className="text-emerald-400 font-bold">{val !== null ? `${val} kg/unit` : 'N/A'}</strong><br />
+                    Production: {pt.production_quantity.toLocaleString()} units
+                  </div>
+
+                  {/* Bar */}
+                  <div
+                    className="w-full bg-gradient-to-t from-emerald-700 to-emerald-500 rounded-t group-hover:from-emerald-600 group-hover:to-emerald-400 transition-all shadow-xs"
+                    style={{ height: `${height}%` }}
+                  />
                 </div>
-
-                {/* Bar */}
-                <div
-                  className="w-full bg-gradient-to-t from-emerald-700 to-emerald-500 rounded-t group-hover:from-emerald-600 group-hover:to-emerald-400 transition-all shadow-xs"
-                  style={{ height: `${height}%` }}
-                />
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
 
         {/* Descriptive Interpretation Box */}
