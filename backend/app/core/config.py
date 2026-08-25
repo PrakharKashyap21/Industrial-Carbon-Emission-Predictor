@@ -10,12 +10,9 @@ class Settings(BaseSettings):
     DEBUG: bool = True
     DATABASE_URL: str = "postgresql+psycopg://postgres:postgres@localhost:5432/industrial_carbon_db"
     CORS_ORIGINS: Union[List[str], str] = [
+        "*",
         "http://localhost:5173",
         "http://127.0.0.1:5173",
-        "http://localhost:5174",
-        "http://127.0.0.1:5174",
-        "http://localhost:5175",
-        "http://127.0.0.1:5175",
         "http://localhost:3000",
     ]
 
@@ -27,6 +24,8 @@ class Settings(BaseSettings):
     @classmethod
     def parse_cors_origins(cls, v: Union[List[str], str]) -> List[str]:
         if isinstance(v, str):
+            if v == "*":
+                return ["*"]
             if v.startswith("[") and v.endswith("]"):
                 try:
                     return json.loads(v)
@@ -35,7 +34,7 @@ class Settings(BaseSettings):
             return [origin.strip() for origin in v.split(",") if origin.strip()]
         elif isinstance(v, list):
             return v
-        return ["http://localhost:5173", "http://127.0.0.1:5173"]
+        return ["*"]
 
     model_config = SettingsConfigDict(
         env_file=".env",
