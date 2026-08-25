@@ -25,6 +25,8 @@ htmlcov/
 # Machine Learning / Models
 *.pkl
 *.joblib
+!models/random_forest/model.joblib
+!models/**/model.joblib
 *.h5
 *.onnx
 *.pt
@@ -49,6 +51,8 @@ build/
 *.sqlite
 *.sqlite3
 *.db
+!industrial_carbon.db
+!backend/industrial_carbon.db
 
 # Docker
 docker-compose.override.yml
