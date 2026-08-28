@@ -9,9 +9,9 @@ DISCLAIMER_TEXT = (
 
 EXECUTIVE_SUMMARY_TEMPLATE = (
     "During the reporting period from {period_start} to {period_end}, the facility produced {total_production:,.0f} units "
-    "and recorded {total_co2:,.2f} kg of model-predicted CO₂ emissions. The emission intensity was {emission_intensity:.3f} kg CO₂ "
+    "and recorded {total_co2:,.2f} kg of model-predicted CO2 emissions. The emission intensity was {emission_intensity:.3f} kg CO2 "
     "per production unit. Compared with historical benchmarks, production-normalized efficiency demonstrates operational stability. "
-    "Optimization analysis identified an estimated potential CO₂ reduction of {optimization_reduction:.1f}% under constrained parameters."
+    "Optimization analysis identified an estimated potential CO2 reduction of {optimization_reduction:.1f}% under constrained parameters."
 )
 
 SYSTEM_METADATA_HEADER = {

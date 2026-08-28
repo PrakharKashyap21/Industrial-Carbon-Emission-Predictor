@@ -1,62 +1,45 @@
 import React from 'react';
-import { Activity, CheckCircle2, AlertTriangle, AlertOctagon } from 'lucide-react';
+import { Activity } from 'lucide-react';
+import Badge from '../ui/Badge';
 
 export const DriftCard = ({ overview }) => {
   const status = overview?.overall_drift_status || 'low';
-
-  let badge = (
-    <span className="px-2.5 py-0.5 rounded text-xs font-semibold bg-emerald-950 text-emerald-300 border border-emerald-800 flex items-center">
-      <CheckCircle2 className="w-3.5 h-3.5 mr-1 text-emerald-400" /> LOW DRIFT
-    </span>
-  );
-  if (status === 'moderate') {
-    badge = (
-      <span className="px-2.5 py-0.5 rounded text-xs font-semibold bg-amber-950 text-amber-300 border border-amber-800 flex items-center">
-        <AlertTriangle className="w-3.5 h-3.5 mr-1 text-amber-400" /> MODERATE
-      </span>
-    );
-  } else if (status === 'high') {
-    badge = (
-      <span className="px-2.5 py-0.5 rounded text-xs font-semibold bg-rose-950 text-rose-300 border border-rose-800 flex items-center">
-        <AlertOctagon className="w-3.5 h-3.5 mr-1 text-rose-400" /> HIGH DRIFT
-      </span>
-    );
-  }
-
   const features = overview?.drift_features || [];
-  const lowCount = features.filter((f) => f.drift_status === 'low').length;
-  const modCount = features.filter((f) => f.drift_status === 'moderate').length;
-  const highCount = features.filter((f) => f.drift_status === 'high').length;
+  const lowCount = overview?.low_drift_count ?? features.filter((f) => f.drift_status === 'low').length;
+  const modCount = overview?.moderate_drift_count ?? features.filter((f) => f.drift_status === 'moderate').length;
+  const highCount = overview?.high_drift_count ?? features.filter((f) => f.drift_status === 'high').length;
 
   return (
-    <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
-      <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-        <div className="flex items-center space-x-2">
-          <Activity className="w-4 h-4 text-cyan-400" />
-          <h3 className="text-xs font-bold text-slate-200 uppercase tracking-wider">
-            Feature Population Stability (PSI)
+    <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs space-y-4">
+      <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+        <div className="flex items-center gap-2">
+          <Activity className="w-4 h-4 text-emerald-600" />
+          <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
+            Feature Drift (PSI)
           </h3>
         </div>
-        {badge}
+        <Badge variant={status === 'low' ? 'success' : status === 'moderate' ? 'warning' : 'danger'}>
+          {status === 'low' ? 'LOW DRIFT' : status.toUpperCase()}
+        </Badge>
       </div>
 
-      <div className="grid grid-cols-3 gap-2 font-mono text-center">
-        <div className="bg-slate-950 p-3 rounded-xl border border-slate-800">
-          <span className="text-[10px] text-slate-400 font-sans block">Low Drift</span>
-          <span className="text-base font-extrabold text-emerald-400">{lowCount} features</span>
+      <div className="grid grid-cols-3 gap-2 text-center">
+        <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200">
+          <span className="text-[10px] font-semibold text-slate-500 block">Low Drift</span>
+          <span className="text-sm font-extrabold font-mono text-emerald-700">{lowCount}</span>
         </div>
 
-        <div className="bg-slate-950 p-3 rounded-xl border border-slate-800">
-          <span className="text-[10px] text-slate-400 font-sans block">Moderate</span>
-          <span className={`text-base font-extrabold ${modCount > 0 ? 'text-amber-400' : 'text-slate-400'}`}>
-            {modCount} features
+        <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200">
+          <span className="text-[10px] font-semibold text-slate-500 block">Moderate</span>
+          <span className={`text-sm font-extrabold font-mono ${modCount > 0 ? 'text-amber-600' : 'text-slate-700'}`}>
+            {modCount}
           </span>
         </div>
 
-        <div className="bg-slate-950 p-3 rounded-xl border border-slate-800">
-          <span className="text-[10px] text-slate-400 font-sans block">High Drift</span>
-          <span className={`text-base font-extrabold ${highCount > 0 ? 'text-rose-400' : 'text-slate-400'}`}>
-            {highCount} features
+        <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200">
+          <span className="text-[10px] font-semibold text-slate-500 block">High Drift</span>
+          <span className={`text-sm font-extrabold font-mono ${highCount > 0 ? 'text-rose-600' : 'text-slate-700'}`}>
+            {highCount}
           </span>
         </div>
       </div>

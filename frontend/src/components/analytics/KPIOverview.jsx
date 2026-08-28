@@ -18,45 +18,45 @@ export const KPIOverview = ({ overview }) => {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
       {/* Total CO2 */}
-      <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-1">
-        <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block flex items-center">
-          <Activity className="w-3.5 h-3.5 mr-1 text-cyan-400" /> Total Predicted CO₂
+      <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-1">
+        <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block flex items-center">
+          <Activity className="w-3.5 h-3.5 mr-1 text-cyan-600" /> Total Predicted CO₂
         </span>
-        <div className="text-2xl font-extrabold text-cyan-300 font-mono">
-          {total_co2 ? Math.round(total_co2).toLocaleString() : '0'} <span className="text-xs font-normal text-slate-400">kg</span>
+        <div className="text-2xl font-extrabold text-slate-900 font-mono">
+          {total_co2 ? Math.round(total_co2).toLocaleString() : '0'} <span className="text-xs font-normal text-slate-500">kg</span>
         </div>
         <span className="text-[10px] text-slate-500 block">Avg {average_co2 ? Math.round(average_co2).toLocaleString() : '0'} kg / observation</span>
       </div>
 
       {/* Production Output */}
-      <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-1">
-        <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block flex items-center">
-          <Factory className="w-3.5 h-3.5 mr-1 text-emerald-400" /> Total Production Output
+      <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-1">
+        <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block flex items-center">
+          <Factory className="w-3.5 h-3.5 mr-1 text-emerald-600" /> Total Production Output
         </span>
-        <div className="text-2xl font-extrabold text-emerald-300 font-mono">
-          {total_production ? Math.round(total_production).toLocaleString() : '0'} <span className="text-xs font-normal text-slate-400">units</span>
+        <div className="text-2xl font-extrabold text-emerald-700 font-mono">
+          {total_production ? Math.round(total_production).toLocaleString() : '0'} <span className="text-xs font-normal text-slate-500">units</span>
         </div>
         <span className="text-[10px] text-slate-500 block">{observation_count} operational records</span>
       </div>
 
       {/* Production-Normalized Emission Intensity */}
-      <div className="bg-slate-900/90 border border-cyan-800/80 rounded-2xl p-5 shadow-xl space-y-1 bg-gradient-to-br from-cyan-950/40 via-slate-900 to-slate-900">
-        <span className="text-[11px] font-semibold text-cyan-400 uppercase tracking-wider block flex items-center">
-          <Gauge className="w-3.5 h-3.5 mr-1 text-cyan-400" /> Emission Intensity
+      <div className="bg-white border border-cyan-300 rounded-2xl p-5 shadow-sm space-y-1 bg-gradient-to-br from-cyan-50/60 via-white to-white">
+        <span className="text-[11px] font-semibold text-cyan-700 uppercase tracking-wider block flex items-center">
+          <Gauge className="w-3.5 h-3.5 mr-1 text-cyan-600" /> Emission Intensity
         </span>
-        <div className="text-2xl font-extrabold text-white font-mono">
-          {emission_intensity} <span className="text-xs font-normal text-slate-400">kg CO₂ / unit</span>
+        <div className="text-2xl font-extrabold text-slate-900 font-mono">
+          {emission_intensity} <span className="text-xs font-normal text-slate-500">kg CO₂ / unit</span>
         </div>
-        <span className="text-[10px] text-slate-400 block">Normalized production emissions efficiency</span>
+        <span className="text-[10px] text-slate-500 block">Normalized production emissions efficiency</span>
       </div>
 
       {/* Avg Operational Energy */}
-      <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-1">
-        <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block flex items-center">
-          <Zap className="w-3.5 h-3.5 mr-1 text-amber-400" /> Avg Energy Inputs
+      <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-1">
+        <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block flex items-center">
+          <Zap className="w-3.5 h-3.5 mr-1 text-amber-600" /> Avg Energy Inputs
         </span>
-        <div className="text-lg font-bold text-slate-200 font-mono">
-          {average_electricity_kwh ? Math.round(average_electricity_kwh).toLocaleString() : '0'} <span className="text-xs font-normal text-slate-400">kWh</span>
+        <div className="text-lg font-bold text-slate-900 font-mono">
+          {average_electricity_kwh ? Math.round(average_electricity_kwh).toLocaleString() : '0'} <span className="text-xs font-normal text-slate-500">kWh</span>
         </div>
         <span className="text-[10px] text-slate-500 block font-mono">Diesel: {average_diesel_liters ? Math.round(average_diesel_liters) : 0} L | Runtime: {average_runtime_hours} hrs</span>
       </div>

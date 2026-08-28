@@ -64,10 +64,10 @@ class ExcelReportGenerator:
                 cell.alignment = Alignment(horizontal="center" if c_idx > 1 else "left")
 
             kpi_rows = [
-                ["Total Predicted CO₂", kpis.get("total_co2_kg", 125400.0), "kg CO₂"],
-                ["Average CO₂ per Reading", kpis.get("avg_co2_kg", 8500.0), "kg CO₂"],
+                ["Total Predicted CO2", kpis.get("total_co2_kg", 125400.0), "kg CO2"],
+                ["Average CO2 per Reading", kpis.get("avg_co2_kg", 8500.0), "kg CO2"],
                 ["Total Production Output", kpis.get("total_production_units", 82000.0), "Units"],
-                ["Emission Intensity", report_data.get("emission_intensity", 1.53), "kg CO₂ / Unit"],
+                ["Emission Intensity", report_data.get("emission_intensity", 1.53), "kg CO2 / Unit"],
                 ["Average Electricity", kpis.get("avg_electricity_kwh", 9500.0), "kWh"],
                 ["Average Diesel Fuel", kpis.get("avg_fuel_liters", 2100.0), "Liters"],
             ]

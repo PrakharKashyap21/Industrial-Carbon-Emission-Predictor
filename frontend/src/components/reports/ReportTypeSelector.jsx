@@ -49,7 +49,7 @@ export const ReportTypeSelector = ({ selectedType, onSelect }) => {
 
   return (
     <div className="space-y-3">
-      <h3 className="text-xs font-bold text-slate-300 uppercase tracking-wider">1. Select Report Type</h3>
+      <h3 className="text-xs font-bold text-slate-700 uppercase tracking-wider">1. Select Report Type</h3>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {reportTypes.map((item) => {
           const Icon = item.icon;
@@ -60,23 +60,23 @@ export const ReportTypeSelector = ({ selectedType, onSelect }) => {
               onClick={() => onSelect(item.id)}
               className={`p-4 rounded-2xl border text-left transition-all relative overflow-hidden flex flex-col justify-between ${
                 isSelected
-                  ? 'bg-slate-900 border-cyan-500 shadow-xl ring-2 ring-cyan-500/20'
-                  : 'bg-slate-900/60 border-slate-800 hover:border-slate-700 hover:bg-slate-900'
+                  ? 'bg-white border-cyan-500 shadow-md ring-2 ring-cyan-500/20'
+                  : 'bg-white border-slate-200 hover:border-slate-300 hover:shadow-sm'
               }`}
             >
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
-                  <div className={`p-2.5 rounded-xl bg-gradient-to-tr ${item.color} text-white shadow-md`}>
+                  <div className={`p-2.5 rounded-xl bg-gradient-to-tr ${item.color} text-white shadow-sm`}>
                     <Icon className="w-5 h-5" />
                   </div>
                   {isSelected && (
-                    <span className="px-2 py-0.5 rounded text-[10px] font-extrabold bg-cyan-950 text-cyan-300 border border-cyan-800 uppercase">
+                    <span className="px-2 py-0.5 rounded text-[10px] font-extrabold bg-cyan-50 text-cyan-700 border border-cyan-200 uppercase">
                       Selected
                     </span>
                   )}
                 </div>
-                <h4 className="text-sm font-extrabold text-white">{item.title}</h4>
-                <p className="text-xs text-slate-400 leading-relaxed">{item.description}</p>
+                <h4 className="text-sm font-extrabold text-slate-900">{item.title}</h4>
+                <p className="text-xs text-slate-500 leading-relaxed">{item.description}</p>
               </div>
             </button>
           );

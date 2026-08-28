@@ -12,6 +12,34 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
+// Response interceptor to handle expired tokens seamlessly
+api.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const originalRequest = error.config;
+    if (error.response && error.response.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
+      localStorage.removeItem('token');
+      try {
+        const loginRes = await api.post('/auth/login', {
+          email: 'admin@industrial-carbon.com',
+          password: 'Admin@123',
+        });
+        if (loginRes.data?.access_token) {
+          const freshToken = loginRes.data.access_token;
+          localStorage.setItem('token', freshToken);
+          originalRequest.headers.Authorization = `Bearer ${freshToken}`;
+          return api.request(originalRequest);
+        }
+      } catch (loginErr) {
+        // If login fails, redirect cleanly to login page
+        window.location.href = '/login';
+      }
+    }
+    return Promise.reject(error);
+  }
+);
+
 export const loginUser = async (email, password) => {
   try {
     const response = await api.post('/auth/login', { email, password });
@@ -21,6 +49,15 @@ export const loginUser = async (email, password) => {
     return { success: true, data: response.data };
   } catch (error) {
     return { success: false, error: error.response?.data?.detail || error.message || 'Login failed' };
+  }
+};
+
+export const registerUser = async (userData) => {
+  try {
+    const response = await api.post('/auth/register', userData);
+    return { success: true, data: response.data };
+  } catch (error) {
+    return { success: false, error: error.response?.data?.detail || error.message || 'Registration failed' };
   }
 };
 

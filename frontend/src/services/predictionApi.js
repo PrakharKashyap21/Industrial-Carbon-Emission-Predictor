@@ -59,3 +59,27 @@ export const getPredictionAnalytics = async (params = {}) => {
     };
   }
 };
+
+export const explainPrediction = async (payload) => {
+  try {
+    const response = await api.post('/explanations/prediction', payload);
+    return { success: true, data: response.data };
+  } catch (error) {
+    return {
+      success: false,
+      error: error.response?.data?.detail || error.message || 'Failed to generate SHAP explanation',
+    };
+  }
+};
+
+export const getGlobalShap = async () => {
+  try {
+    const response = await api.get('/explanations/global');
+    return { success: true, data: response.data };
+  } catch (error) {
+    return {
+      success: false,
+      error: error.response?.data?.detail || error.message || 'Failed to fetch global SHAP importance',
+    };
+  }
+};

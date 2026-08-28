@@ -13,8 +13,10 @@ class ConstraintEngine:
         constraints: Dict[str, Any] = None,
     ) -> Tuple[bool, str]:
         """Check candidate physical features against configured operational hard constraints."""
-        constraints = constraints or {}
         min_prod = float(constraints.get("minimum_production", self.DEFAULT_MIN_PRODUCTION))
+        baseline_prod = float(baseline_inputs.get("production_quantity", 0.0))
+        if baseline_prod > 0 and baseline_prod < min_prod:
+            min_prod = baseline_prod * 0.8
 
         cand_prod = float(candidate_inputs.get("production_quantity", 0.0))
         if cand_prod < min_prod:

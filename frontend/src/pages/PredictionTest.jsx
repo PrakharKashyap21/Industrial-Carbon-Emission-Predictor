@@ -1,8 +1,39 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { predictCO2Preview } from '../services/api';
-import { Cpu, Zap, Flame, Wind, Package, Layers, Clock, Thermometer, Gauge, Activity, Sparkles, CheckCircle2, AlertTriangle, ArrowRight } from 'lucide-react';
+import PageHeader from '../components/ui/PageHeader';
+import Button from '../components/ui/Button';
+import Card, { CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '../components/ui/Card';
+import Input from '../components/ui/Input';
+import Badge from '../components/ui/Badge';
+import Alert from '../components/ui/Alert';
+import Tabs from '../components/ui/Tabs';
+import Tooltip from '../components/ui/Tooltip';
+
+import {
+  Zap,
+  Flame,
+  Wind,
+  Package,
+  Layers,
+  Clock,
+  Thermometer,
+  Gauge,
+  Cpu,
+  SlidersHorizontal,
+  Lightbulb,
+  CheckCircle2,
+  AlertTriangle,
+  ArrowRight,
+  TrendingDown,
+  Activity,
+  Award,
+} from 'lucide-react';
 
 export const PredictionTest = () => {
+  const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState('energy');
+
   const [formData, setFormData] = useState({
     plant_id: 1,
     electricity_consumption_kwh: 14500,
@@ -43,258 +74,325 @@ export const PredictionTest = () => {
     }
   };
 
+  const tabs = [
+    { id: 'energy', label: 'ENERGY CONSUMPTION', icon: Zap },
+    { id: 'production', label: 'PRODUCTION VOLUME', icon: Package },
+    { id: 'operations', label: 'OPERATING CONDITIONS', icon: Clock },
+  ];
+
+  // Reliability calculation check
+  const getReliability = () => {
+    if (!prediction) return { text: 'High', variant: 'healthy' };
+    if (formData.machine_runtime_hours > 23 || formData.temperature_c > 60) {
+      return { text: 'Moderate (High Operating Range)', variant: 'warning' };
+    }
+    return { text: 'High (Optimal Feature Range)', variant: 'healthy' };
+  };
+
+  const reliability = getReliability();
+
   return (
-    <div className="space-y-8">
-      {/* Header Banner */}
-      <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-xs relative overflow-hidden">
-        <div className="flex items-center space-x-3 mb-2">
-          <div className="p-2 bg-cyan-50 text-cyan-700 rounded-xl border border-cyan-200">
-            <Cpu className="w-5 h-5" />
-          </div>
-          <span className="text-xs font-semibold text-cyan-700 uppercase tracking-wider">
-            Real-Time AI Prediction Testing Interface
-          </span>
-        </div>
-        <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900">
-          Industrial CO₂ Prediction Testing Form
-        </h1>
-        <p className="text-xs sm:text-sm text-slate-400 mt-1">
-          Adjust operational parameters to test Random Forest, XGBoost, and Weighted Ensemble predictions in real time.
-        </p>
-      </div>
+    <div className="space-y-6">
+      {/* 1. Page Header */}
+      <PageHeader
+        title="CO₂ Emission Prediction Workflow"
+        subtitle="Specify plant operating parameters to compute real-time carbon emissions using the RF + XGBoost Weighted Ensemble Model."
+        badge={
+          <Badge variant="healthy" dot>
+            Model Ready (v1.4)
+          </Badge>
+        }
+      />
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        {/* Form Column */}
-        <div className="lg:col-span-7 bg-slate-900/90 border border-slate-800 rounded-2xl p-6 shadow-xl">
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <h3 className="text-base font-bold text-slate-200 border-b border-slate-800 pb-3 flex items-center">
-              <Activity className="w-4 h-4 mr-2 text-cyan-400" />
-              Operational Parameters
-            </h3>
-
-            {/* Input Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="text-xs font-medium text-slate-300 flex items-center mb-1">
-                  <Zap className="w-3.5 h-3.5 mr-1 text-cyan-400" /> Electricity (kWh)
-                </label>
-                <input
-                  type="number"
-                  name="electricity_consumption_kwh"
-                  value={formData.electricity_consumption_kwh}
-                  onChange={handleChange}
-                  step="any"
-                  min="0"
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-100 focus:border-cyan-500 focus:outline-none font-mono"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="text-xs font-medium text-slate-300 flex items-center mb-1">
-                  <Flame className="w-3.5 h-3.5 mr-1 text-amber-400" /> Diesel (Liters)
-                </label>
-                <input
-                  type="number"
-                  name="diesel_consumption_liters"
-                  value={formData.diesel_consumption_liters}
-                  onChange={handleChange}
-                  step="any"
-                  min="0"
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-100 focus:border-cyan-500 focus:outline-none font-mono"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="text-xs font-medium text-slate-300 flex items-center mb-1">
-                  <Wind className="w-3.5 h-3.5 mr-1 text-blue-400" /> Natural Gas (m³)
-                </label>
-                <input
-                  type="number"
-                  name="natural_gas_consumption_m3"
-                  value={formData.natural_gas_consumption_m3}
-                  onChange={handleChange}
-                  step="any"
-                  min="0"
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-100 focus:border-cyan-500 focus:outline-none font-mono"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="text-xs font-medium text-slate-300 flex items-center mb-1">
-                  <Package className="w-3.5 h-3.5 mr-1 text-emerald-400" /> Production Quantity
-                </label>
-                <input
-                  type="number"
-                  name="production_quantity"
-                  value={formData.production_quantity}
-                  onChange={handleChange}
-                  step="any"
-                  min="0"
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-100 focus:border-cyan-500 focus:outline-none font-mono"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="text-xs font-medium text-slate-300 flex items-center mb-1">
-                  <Layers className="w-3.5 h-3.5 mr-1 text-indigo-400" /> Raw Material (kg)
-                </label>
-                <input
-                  type="number"
-                  name="raw_material_consumption_kg"
-                  value={formData.raw_material_consumption_kg}
-                  onChange={handleChange}
-                  step="any"
-                  min="0"
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-100 focus:border-cyan-500 focus:outline-none font-mono"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="text-xs font-medium text-slate-300 flex items-center mb-1">
-                  <Clock className="w-3.5 h-3.5 mr-1 text-yellow-400" /> Runtime (Hours ≤ 24)
-                </label>
-                <input
-                  type="number"
-                  name="machine_runtime_hours"
-                  value={formData.machine_runtime_hours}
-                  onChange={handleChange}
-                  step="0.1"
-                  min="0"
-                  max="24"
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-100 focus:border-cyan-500 focus:outline-none font-mono"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="text-xs font-medium text-slate-300 flex items-center mb-1">
-                  <Thermometer className="w-3.5 h-3.5 mr-1 text-rose-400" /> Temperature (°C)
-                </label>
-                <input
-                  type="number"
-                  name="temperature_c"
-                  value={formData.temperature_c}
-                  onChange={handleChange}
-                  step="any"
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-100 focus:border-cyan-500 focus:outline-none font-mono"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="text-xs font-medium text-slate-300 flex items-center mb-1">
-                  <Gauge className="w-3.5 h-3.5 mr-1 text-purple-400" /> Pressure (bar)
-                </label>
-                <input
-                  type="number"
-                  name="pressure_bar"
-                  value={formData.pressure_bar}
-                  onChange={handleChange}
-                  step="any"
-                  min="0"
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-100 focus:border-cyan-500 focus:outline-none font-mono"
-                  required
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="text-xs font-medium text-slate-300 flex items-center mb-1">
-                Prior Day Baseline CO₂ (kg)
-              </label>
-              <input
-                type="number"
-                name="previous_co2_emission_kg"
-                value={formData.previous_co2_emission_kg}
-                onChange={handleChange}
-                step="any"
-                min="0"
-                className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-100 focus:border-cyan-500 focus:outline-none font-mono"
-                required
-              />
-            </div>
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-3 px-4 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-cyan-500/20 transition-all flex items-center justify-center space-x-2 disabled:opacity-50"
-            >
-              <span>{loading ? 'Executing ML Inference...' : 'Predict CO₂ Emission'}</span>
-              <ArrowRight className="w-4 h-4" />
-            </button>
-          </form>
-        </div>
-
-        {/* Results Column */}
-        <div className="lg:col-span-5 space-y-6">
-          <h3 className="text-base font-bold text-slate-200 flex items-center">
-            <Sparkles className="w-4 h-4 mr-2 text-cyan-400" />
-            Prediction Results
-          </h3>
-
-          {error && (
-            <div className="bg-rose-950/40 border border-rose-800 text-rose-300 p-4 rounded-2xl text-xs space-y-1">
-              <div className="flex items-center font-bold text-rose-400">
-                <AlertTriangle className="w-4 h-4 mr-1.5" /> Prediction Error
-              </div>
-              <p>{error}</p>
-            </div>
-          )}
-
-          {!prediction && !error && (
-            <div className="bg-slate-900/50 border border-dashed border-slate-800 rounded-2xl p-8 text-center text-slate-500 text-xs">
-              Fill out operational parameters and click <strong>Predict CO₂ Emission</strong> to trigger inference.
-            </div>
-          )}
-
-          {prediction && (
-            <div className="space-y-4">
-              {/* Winner Selected Ensemble Card */}
-              <div className="bg-gradient-to-br from-cyan-950/60 via-slate-900 to-slate-900 border border-cyan-800/60 rounded-2xl p-6 shadow-xl relative overflow-hidden">
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-xs font-bold text-cyan-400 uppercase tracking-wider flex items-center">
-                    <CheckCircle2 className="w-4 h-4 mr-1.5" /> Selected Winner Model
-                  </span>
-                  <span className="px-2.5 py-0.5 rounded text-[11px] font-mono font-bold bg-cyan-900/80 text-cyan-300 border border-cyan-700">
-                    {prediction.model_version}
-                  </span>
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        {/* Left Column: Categorized Input Form */}
+        <div className="lg:col-span-7">
+          <Card>
+            <CardHeader className="bg-slate-50/50">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <Activity className="w-4 h-4 text-emerald-600" />
+                    <span>Operating Input Parameters</span>
+                  </CardTitle>
+                  <CardDescription>
+                    Grouped by energy, production volume, and machine operational telemetry.
+                  </CardDescription>
                 </div>
+              </div>
+              <Tabs tabs={tabs} activeTab={activeTab} onChange={setActiveTab} className="mt-4" />
+            </CardHeader>
 
-                <div className="space-y-1 mb-4">
-                  <span className="text-xs text-slate-400 block font-medium">Weighted Ensemble Prediction</span>
-                  <div className="text-3xl font-black text-cyan-300 font-mono">
-                    {prediction.ensemble_prediction_kg.toLocaleString()} <span className="text-sm font-normal text-slate-400">kg CO₂</span>
+            <CardContent>
+              <form onSubmit={handleSubmit} className="space-y-5">
+                {/* Tab 1: ENERGY CONSUMPTION */}
+                {activeTab === 'energy' && (
+                  <div className="space-y-4">
+                    <Input
+                      label="Electricity Consumption"
+                      unit="kWh"
+                      name="electricity_consumption_kwh"
+                      type="number"
+                      step="any"
+                      min="0"
+                      value={formData.electricity_consumption_kwh}
+                      onChange={handleChange}
+                      helperText="Total grid electricity consumed during the operating cycle."
+                      required
+                    />
+
+                    <Input
+                      label="Diesel Consumption"
+                      unit="Liters"
+                      name="diesel_consumption_liters"
+                      type="number"
+                      step="any"
+                      min="0"
+                      value={formData.diesel_consumption_liters}
+                      onChange={handleChange}
+                      helperText="Diesel fuel used for generators, heavy equipment, and backup power."
+                      required
+                    />
+
+                    <Input
+                      label="Natural Gas Consumption"
+                      unit="m³"
+                      name="natural_gas_consumption_m3"
+                      type="number"
+                      step="any"
+                      min="0"
+                      value={formData.natural_gas_consumption_m3}
+                      onChange={handleChange}
+                      helperText="Volume of natural gas combusted in industrial furnaces and boilers."
+                      required
+                    />
+                  </div>
+                )}
+
+                {/* Tab 2: PRODUCTION VOLUME */}
+                {activeTab === 'production' && (
+                  <div className="space-y-4">
+                    <Input
+                      label="Production Quantity"
+                      unit="Tons"
+                      name="production_quantity"
+                      type="number"
+                      step="any"
+                      min="0"
+                      value={formData.production_quantity}
+                      onChange={handleChange}
+                      helperText="Net manufactured output produced during this operating shift."
+                      required
+                    />
+
+                    <Input
+                      label="Raw Material Usage"
+                      unit="kg"
+                      name="raw_material_consumption_kg"
+                      type="number"
+                      step="any"
+                      min="0"
+                      value={formData.raw_material_consumption_kg}
+                      onChange={handleChange}
+                      helperText="Mass of raw materials fed into the processing machinery."
+                      required
+                    />
+
+                    <Input
+                      label="Prior Period Baseline CO₂"
+                      unit="kg"
+                      name="previous_co2_emission_kg"
+                      type="number"
+                      step="any"
+                      min="0"
+                      value={formData.previous_co2_emission_kg}
+                      onChange={handleChange}
+                      helperText="Historical emission benchmark used for autoregressive comparison."
+                      required
+                    />
+                  </div>
+                )}
+
+                {/* Tab 3: OPERATING CONDITIONS */}
+                {activeTab === 'operations' && (
+                  <div className="space-y-4">
+                    <Input
+                      label="Machine Runtime Hours"
+                      unit="Hours"
+                      name="machine_runtime_hours"
+                      type="number"
+                      step="0.1"
+                      min="0"
+                      max="24"
+                      value={formData.machine_runtime_hours}
+                      onChange={handleChange}
+                      helperText="Continuous operational hours recorded for primary heavy machinery (Max 24h)."
+                      required
+                    />
+
+                    <Input
+                      label="Operating Temperature"
+                      unit="°C"
+                      name="temperature_c"
+                      type="number"
+                      step="any"
+                      value={formData.temperature_c}
+                      onChange={handleChange}
+                      helperText="Average ambient and furnace operating temperature."
+                      required
+                    />
+
+                    <Input
+                      label="Operating Pressure"
+                      unit="bar"
+                      name="pressure_bar"
+                      type="number"
+                      step="any"
+                      min="0"
+                      value={formData.pressure_bar}
+                      onChange={handleChange}
+                      helperText="Process pressure maintained across hydraulic lines and turbines."
+                      required
+                    />
+                  </div>
+                )}
+
+                <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
+                  <div className="text-xs text-slate-500">
+                    Tab {activeTab === 'energy' ? '1/3' : activeTab === 'production' ? '2/3' : '3/3'}
+                  </div>
+                  <Button
+                    type="submit"
+                    variant="primary"
+                    size="lg"
+                    isLoading={loading}
+                    icon={Cpu}
+                    className="w-full sm:w-auto"
+                  >
+                    Calculate Predicted CO₂
+                  </Button>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Right Column: Prediction Output Card & Next Actions */}
+        <div className="lg:col-span-5 space-y-6">
+          <Card className="border-emerald-200/80 shadow-md">
+            <CardHeader className="bg-emerald-950 text-white rounded-t-xl">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
+                  <Award className="w-4 h-4" /> Selected AI Model Output
+                </span>
+                <span className="text-xs font-mono bg-emerald-900 text-emerald-300 border border-emerald-700 px-2 py-0.5 rounded-full">
+                  Ensemble v1.4
+                </span>
+              </div>
+            </CardHeader>
+
+            <CardContent className="p-6 space-y-6">
+              {error && (
+                <Alert type="error" title="Prediction Request Failed">
+                  {error}
+                </Alert>
+              )}
+
+              {!prediction && !error && (
+                <div className="p-8 text-center text-slate-500 space-y-3">
+                  <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mx-auto text-slate-400">
+                    <Cpu className="w-6 h-6" />
+                  </div>
+                  <p className="text-xs">
+                    Fill out operating values on the left and click <strong>Calculate Predicted CO₂</strong> to execute real-time model inference.
+                  </p>
+                </div>
+              )}
+
+              {prediction && (
+                <div className="space-y-6">
+                  {/* Primary CO2 Callout */}
+                  <div className="bg-slate-900 text-white rounded-xl p-6 text-center space-y-2 border border-slate-800 shadow-inner">
+                    <span className="text-xs text-slate-400 uppercase font-semibold tracking-wider">
+                      PREDICTED CO₂ EMISSIONS
+                    </span>
+                    <div className="text-4xl font-extrabold text-emerald-400 font-mono tracking-tight">
+                      {prediction.ensemble_prediction_kg?.toLocaleString()} <span className="text-lg text-slate-400 font-normal">kg CO₂</span>
+                    </div>
+                    <div className="flex items-center justify-center gap-2 pt-2">
+                      <span className="text-xs text-slate-400">Model Reliability:</span>
+                      <Badge variant={reliability.variant} size="sm">
+                        {reliability.text}
+                      </Badge>
+                    </div>
+                  </div>
+
+                  {/* Individual Sub-model Estimates */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg text-center">
+                      <span className="text-[11px] text-slate-500 font-medium block">Random Forest</span>
+                      <span className="text-sm font-bold text-slate-800 font-mono">
+                        {prediction.random_forest_prediction_kg?.toLocaleString()} kg
+                      </span>
+                      <span className="text-[10px] text-slate-400 block mt-0.5 font-mono">
+                        Weight: {((prediction.rf_weight_used || 0.5) * 100).toFixed(0)}%
+                      </span>
+                    </div>
+
+                    <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg text-center">
+                      <span className="text-[11px] text-slate-500 font-medium block">XGBoost Model</span>
+                      <span className="text-sm font-bold text-slate-800 font-mono">
+                        {prediction.xgboost_prediction_kg?.toLocaleString()} kg
+                      </span>
+                      <span className="text-[10px] text-slate-400 block mt-0.5 font-mono">
+                        Weight: {((1 - (prediction.rf_weight_used || 0.5)) * 100).toFixed(0)}%
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Next Action Buttons Workflow */}
+                  <div className="space-y-2.5 pt-4 border-t border-slate-100">
+                    <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                      Recommended Next Actions
+                    </h4>
+
+                    <Button
+                      variant="outline"
+                      size="md"
+                      icon={Lightbulb}
+                      className="w-full justify-between"
+                      onClick={() => navigate('/explain-prediction', { state: { inputData: formData, prediction } })}
+                    >
+                      <span>Understand This Prediction (SHAP)</span>
+                      <ArrowRight className="w-4 h-4 text-slate-400" />
+                    </Button>
+
+                    <Button
+                      variant="secondary"
+                      size="md"
+                      icon={SlidersHorizontal}
+                      className="w-full justify-between"
+                      onClick={() => navigate('/what-if', { state: { baselineInputs: formData, baselinePrediction: prediction.ensemble_prediction_kg } })}
+                    >
+                      <span>Run What-If Scenario Analysis</span>
+                      <ArrowRight className="w-4 h-4 text-slate-400" />
+                    </Button>
+
+                    <Button
+                      variant="primary"
+                      size="md"
+                      icon={TrendingDown}
+                      className="w-full justify-between"
+                      onClick={() => navigate('/optimization', { state: { currentInputs: formData } })}
+                    >
+                      <span>Find Lower-Emission Scenario</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </Button>
                   </div>
                 </div>
-
-                <div className="text-[11px] text-slate-400 font-mono bg-slate-950/60 p-2.5 rounded-lg border border-slate-800">
-                  Weights: {(prediction.rf_weight_used * 100).toFixed(0)}% RF + {((1 - prediction.rf_weight_used) * 100).toFixed(0)}% XGBoost
-                </div>
-              </div>
-
-              {/* Individual Model Cards */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-4">
-                  <span className="text-xs text-slate-400 block font-medium mb-1">Random Forest</span>
-                  <span className="text-lg font-bold text-slate-200 font-mono">
-                    {prediction.random_forest_prediction_kg.toLocaleString()} <span className="text-xs font-normal text-slate-500">kg</span>
-                  </span>
-                </div>
-
-                <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-4">
-                  <span className="text-xs text-slate-400 block font-medium mb-1">XGBoost</span>
-                  <span className="text-lg font-bold text-slate-200 font-mono">
-                    {prediction.xgboost_prediction_kg.toLocaleString()} <span className="text-xs font-normal text-slate-500">kg</span>
-                  </span>
-                </div>
-              </div>
-            </div>
-          )}
+              )}
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { BarChart3, AlertCircle, Loader2 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { BarChart3, FileSpreadsheet, RefreshCw, LayoutGrid, TrendingUp, Layers, Activity } from 'lucide-react';
 import {
   getOverview,
   getEmissionTrend,
@@ -9,25 +10,32 @@ import {
   getOptimizationImpact,
   getInsights,
 } from '../services/analyticsApi';
+import { useFilter } from '../context/FilterContext';
 
-import AnalyticsFilters from '../components/analytics/AnalyticsFilters';
+import PageHeader from '../components/ui/PageHeader';
+import Button from '../components/ui/Button';
+import Badge from '../components/ui/Badge';
+import Alert from '../components/ui/Alert';
+import LoadingState from '../components/ui/LoadingState';
+import Tabs from '../components/ui/Tabs';
+
 import KPIOverview from '../components/analytics/KPIOverview';
 import EmissionTrend from '../components/analytics/EmissionTrend';
 import ProductionTrend from '../components/analytics/ProductionTrend';
 import EmissionIntensity from '../components/analytics/EmissionIntensity';
 import FeatureTrend from '../components/analytics/FeatureTrend';
 import AnomalyTimeline from '../components/analytics/AnomalyTimeline';
-import ModelInsights from '../components/analytics/ModelInsights';
+import ModelInsightsWidget from '../components/analytics/ModelInsights';
 import OptimizationImpact from '../components/analytics/OptimizationImpact';
 import IndustrialInsights from '../components/analytics/IndustrialInsights';
 
 export const Analytics = () => {
+  const { selectedPlantId, dateRange } = useFilter();
+  const navigate = useNavigate();
+
+  const [activeTab, setActiveTab] = useState('overview');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-
-  // Filters
-  const [days, setDays] = useState(30);
-  const [plantId, setPlantId] = useState(null);
 
   // Analytics Data States
   const [overview, setOverview] = useState(null);
@@ -38,15 +46,25 @@ export const Analytics = () => {
   const [optimizationData, setOptimizationData] = useState(null);
   const [insights, setInsights] = useState([]);
 
-  useEffect(() => {
-    fetchAllAnalytics();
-  }, [days, plantId]);
+  const getDaysFromFilter = (range) => {
+    switch (range) {
+      case 'today': return 1;
+      case '7d': return 7;
+      case '30d': return 30;
+      case 'this_month': return 30;
+      case 'last_month': return 60;
+      default: return 30;
+    }
+  };
+
+  const days = getDaysFromFilter(dateRange);
+  const plantIdParam = selectedPlantId === 'all' ? null : selectedPlantId;
 
   const fetchAllAnalytics = async () => {
     setLoading(true);
     setError(null);
 
-    const params = { days, plant_id: plantId };
+    const params = { days, plant_id: plantIdParam };
 
     const [
       ovRes,
@@ -62,7 +80,7 @@ export const Analytics = () => {
       getEmissionIntensity(params),
       getFeatures(params),
       getAnomalies(params),
-      getOptimizationImpact({ plant_id: plantId }),
+      getOptimizationImpact({ plant_id: plantIdParam }),
       getInsights(params),
     ]);
 
@@ -79,81 +97,102 @@ export const Analytics = () => {
     if (insRes.success) setInsights(insRes.data);
   };
 
-  return (
-    <div className="space-y-8 pb-12">
-      {/* Header Banner & Filters */}
-      <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-6 shadow-xl relative overflow-hidden space-y-4">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl -z-0 pointer-events-none" />
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="space-y-1">
-            <div className="flex items-center space-x-2">
-              <span className="px-2.5 py-1 bg-cyan-950 text-cyan-300 rounded-lg text-[10px] font-bold border border-cyan-800 uppercase tracking-widest flex items-center">
-                <BarChart3 className="w-3.5 h-3.5 mr-1 text-cyan-400" /> Phase 12 Analytics Platform
-              </span>
-              <span className="text-xs text-slate-400 font-semibold">• Industrial Carbon Intelligence</span>
-            </div>
-            <h1 className="text-2xl font-extrabold text-white">Advanced Industrial Carbon Analytics & Insights</h1>
-            <p className="text-xs text-slate-400 max-w-3xl leading-relaxed">
-              Comprehensive analytics platform providing production-normalized emission intensity (kg CO₂ / unit), time-series emission trends, feature correlations, operational anomaly timelines, model insights, optimization savings impact, and deterministic rule-based industrial insights.
-            </p>
-          </div>
+  useEffect(() => {
+    fetchAllAnalytics();
+  }, [selectedPlantId, dateRange]);
 
-          <AnalyticsFilters
-            days={days}
-            setDays={setDays}
-            plantId={plantId}
-            setPlantId={setPlantId}
-            disabled={loading}
-          />
-        </div>
-      </div>
+  const tabs = [
+    { id: 'overview', label: 'OVERVIEW & KPIS', icon: LayoutGrid },
+    { id: 'emissions', label: 'EMISSION TRENDS', icon: TrendingUp },
+    { id: 'production', label: 'PRODUCTION & INTENSITY', icon: Layers },
+    { id: 'drivers', label: 'ANOMALIES & DRIVERS', icon: Activity },
+  ];
+
+  return (
+    <div className="space-y-6">
+      {/* Page Header */}
+      <PageHeader
+        title="Industrial Carbon Analytics & Trends"
+        subtitle="Analyze production-normalized emission intensity (kg CO₂ / unit), time-series trends, feature correlations, and anomaly timelines."
+        badge={
+          <Badge variant="info" dot>
+            Telemetry Analytics
+          </Badge>
+        }
+      >
+        <Button
+          variant="outline"
+          size="sm"
+          icon={RefreshCw}
+          isLoading={loading}
+          onClick={fetchAllAnalytics}
+        >
+          Refresh
+        </Button>
+        <Button
+          variant="secondary"
+          size="sm"
+          icon={FileSpreadsheet}
+          onClick={() => navigate('/reports')}
+        >
+          Export Report
+        </Button>
+      </PageHeader>
+
+      {/* Navigation Sub-Tabs */}
+      <Tabs tabs={tabs} activeTab={activeTab} onChange={setActiveTab} />
 
       {/* Error Alert */}
       {error && (
-        <div className="bg-rose-950/60 border border-rose-800 rounded-xl p-4 text-xs text-rose-200 flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
-            <span>{error}</span>
-          </div>
-          <button onClick={() => setError(null)} className="text-slate-400 hover:text-white font-bold">✕</button>
-        </div>
+        <Alert type="error" title="Unable to load analytics data">
+          {error}
+        </Alert>
       )}
 
-      {/* Loading Skeleton / Spinner */}
+      {/* Loading Skeleton */}
       {loading ? (
-        <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-12 text-center text-slate-400 flex flex-col items-center justify-center space-y-3">
-          <Loader2 className="w-8 h-8 text-cyan-400 animate-spin" />
-          <span className="text-xs font-mono font-semibold text-cyan-300">Loading Industrial Carbon Analytics Platform Data...</span>
-        </div>
+        <LoadingState message="Processing multi-plant carbon telemetry analytics..." type="card" />
       ) : (
-        <>
-          {/* Top KPI Overview */}
-          <KPIOverview overview={overview} />
+        <div className="space-y-6">
+          {/* Tab 1: OVERVIEW & KPIS */}
+          {activeTab === 'overview' && (
+            <div className="space-y-6">
+              <KPIOverview overview={overview} />
+              <IndustrialInsights insights={insights} />
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <EmissionTrend trendData={trendData} />
+                <ProductionTrend trendData={trendData} />
+              </div>
+            </div>
+          )}
 
-          {/* Industrial Insights Section */}
-          <IndustrialInsights insights={insights} />
+          {/* Tab 2: EMISSION TRENDS */}
+          {activeTab === 'emissions' && (
+            <div className="space-y-6">
+              <EmissionTrend trendData={trendData} />
+              <OptimizationImpact optimizationData={optimizationData} />
+            </div>
+          )}
 
-          {/* Emission Trends & Production Charts Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <EmissionTrend trendData={trendData} />
-            <ProductionTrend trendData={trendData} />
-          </div>
+          {/* Tab 3: PRODUCTION & INTENSITY */}
+          {activeTab === 'production' && (
+            <div className="space-y-6">
+              <ProductionTrend trendData={trendData} />
+              <EmissionIntensity intensityData={intensityData} />
+            </div>
+          )}
 
-          {/* Emission Intensity & Feature Correlation Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <EmissionIntensity intensityData={intensityData} />
-            <FeatureTrend featureData={featureData} />
-          </div>
-
-          {/* Anomaly Timeline & Model Performance Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <AnomalyTimeline anomalyData={anomalyData} />
-            <ModelInsights />
-          </div>
-
-          {/* Optimization Impact Section */}
-          <OptimizationImpact optimizationData={optimizationData} />
-        </>
+          {/* Tab 4: ANOMALIES & DRIVERS */}
+          {activeTab === 'drivers' && (
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <FeatureTrend featureData={featureData} />
+                <AnomalyTimeline anomalyData={anomalyData} />
+              </div>
+              <ModelInsightsWidget />
+            </div>
+          )}
+        </div>
       )}
     </div>
   );

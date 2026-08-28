@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List, Dict, Any, Optional
 from sqlalchemy.orm import Session
 from sqlalchemy import select, and_
@@ -30,7 +30,7 @@ class AlertService:
         if feature_name is not None:
             query = query.where(MonitoringAlert.feature_name == feature_name)
 
-        existing = db.execute(query).scalar_one_or_none()
+        existing = db.execute(query).scalars().first()
         if existing:
             return None  # Deduplicated
 
@@ -41,7 +41,7 @@ class AlertService:
             feature_name=feature_name,
             message=message,
             status="active",
-            created_at=datetime.utcnow(),
+            created_at=datetime.now(timezone.utc).replace(tzinfo=None),
         )
 
         db.add(new_alert)
@@ -57,7 +57,7 @@ class AlertService:
             return None
 
         alert.status = "resolved"
-        alert.resolved_at = datetime.utcnow()
+        alert.resolved_at = datetime.now(timezone.utc).replace(tzinfo=None)
         db.commit()
         db.refresh(alert)
 

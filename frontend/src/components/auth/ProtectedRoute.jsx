@@ -9,14 +9,14 @@ export const ProtectedRoute = ({ children }) => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-950 text-cyan-400">
+      <div className="min-h-screen flex items-center justify-center bg-slate-900 text-emerald-400">
         <Loader2 className="w-8 h-8 animate-spin" />
       </div>
     );
   }
 
-  if (!isAuthenticated && !user) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
+  if (!isAuthenticated) {
+    return <Navigate to="/signup" state={{ from: location }} replace />;
   }
 
   return children;

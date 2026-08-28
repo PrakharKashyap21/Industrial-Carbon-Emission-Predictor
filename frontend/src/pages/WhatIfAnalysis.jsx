@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Sliders, Activity, Table, BookmarkCheck, Play, AlertCircle } from 'lucide-react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { Sliders, Activity, Table as TableIcon, BookmarkCheck, Play, AlertCircle, TrendingDown } from 'lucide-react';
 import { predictScenario, compareScenarios, analyzeSensitivity, saveScenario, getSavedScenarios } from '../services/whatIfApi';
 import ScenarioBuilder from '../components/whatif/ScenarioBuilder';
 import ScenarioResult from '../components/whatif/ScenarioResult';
@@ -7,34 +8,52 @@ import ScenarioComparison from '../components/whatif/ScenarioComparison';
 import ScenarioRecommendation from '../components/whatif/ScenarioRecommendation';
 import ScenarioSensitivityChart from '../components/whatif/ScenarioSensitivityChart';
 
+import PageHeader from '../components/ui/PageHeader';
+import Button from '../components/ui/Button';
+import Badge from '../components/ui/Badge';
+import Alert from '../components/ui/Alert';
+
+import { useFilter } from '../context/FilterContext';
+
 export const WhatIfAnalysis = () => {
-  const [activeTab, setActiveTab] = useState('single'); // 'single', 'compare', 'sensitivity', 'history'
+  const { selectedPlantId } = useFilter();
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  const [activeTab, setActiveTab] = useState('single');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // States
+  const plantIdParam = selectedPlantId === 'all' ? 1 : parseInt(selectedPlantId);
+
   const [singleResult, setSingleResult] = useState(null);
   const [comparisonResult, setComparisonResult] = useState(null);
   const [sensitivityResult, setSensitivityResult] = useState(null);
   const [savedScenarios, setSavedScenarios] = useState([]);
 
-  // Default initial run on mount
   useEffect(() => {
+    // Initial run or pre-fill from router state
+    const initialChanges = location.state?.baselineInputs
+      ? { electricity_consumption_kwh: -5 }
+      : { electricity_consumption_kwh: -10 };
+
     handleRunSingle({
-      scenario_name: 'Energy Optimization (-10%)',
-      changes: { electricity_consumption_kwh: -10 },
+      plant_id: plantIdParam,
+      scenario_name: 'Energy Efficiency (-10%)',
+      changes: initialChanges,
       change_type: 'percentage',
-      constraints: { min_production_output: 4800 },
+      constraints: { min_production_output: 2000 },
     });
 
     handleSensitivityChange('electricity_consumption_kwh');
     fetchSavedHistory();
-  }, []);
+  }, [selectedPlantId, location.state]);
 
   const handleRunSingle = async (payload) => {
     setLoading(true);
     setError(null);
-    const res = await predictScenario(payload);
+    const payloadWithPlant = { ...payload, plant_id: payload.plant_id || plantIdParam };
+    const res = await predictScenario(payloadWithPlant);
     setLoading(false);
     if (res.success) {
       setSingleResult(res.data);
@@ -48,7 +67,7 @@ export const WhatIfAnalysis = () => {
     setLoading(true);
     setError(null);
     const res = await compareScenarios({
-      plant_id: 1,
+      plant_id: plantIdParam,
       scenarios: scenariosList,
       constraints,
     });
@@ -64,7 +83,7 @@ export const WhatIfAnalysis = () => {
   const handleSensitivityChange = async (featureName) => {
     setLoading(true);
     const res = await analyzeSensitivity({
-      plant_id: 1,
+      plant_id: plantIdParam,
       feature: featureName,
       changes: [-20, -15, -10, -5, 0, 5, 10],
     });
@@ -82,7 +101,7 @@ export const WhatIfAnalysis = () => {
     });
     if (res.success) {
       fetchSavedHistory();
-      alert('Scenario successfully saved to database!');
+      alert('Scenario saved to database!');
     }
   };
 
@@ -94,36 +113,36 @@ export const WhatIfAnalysis = () => {
   };
 
   return (
-    <div className="space-y-8 pb-12">
-      {/* Header Banner */}
-      <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs relative overflow-hidden">
-        <div className="relative z-10 space-y-2">
-          <div className="flex items-center space-x-2">
-            <span className="px-2.5 py-1 bg-cyan-50 text-cyan-700 rounded-lg text-[10px] font-bold border border-cyan-200 uppercase tracking-widest">
-              AI Scenario Simulator
-            </span>
-            <span className="text-xs text-slate-500 font-semibold">• Non-Mutating Operational Simulation</span>
-          </div>
-          <h1 className="text-2xl font-extrabold text-slate-900">What-if Analysis & Scenario Simulation Engine</h1>
-          <p className="text-xs text-slate-600 max-w-3xl leading-relaxed">
-            Simulate operational parameter modifications (electricity, fuel, runtime), compare scenarios side-by-side against baseline emissions, validate production feasibility constraints, analyze sensitivity response curves, and audit saved scenario decisions.
-          </p>
-        </div>
-      </div>
+    <div className="space-y-6">
+      {/* 1. Page Header */}
+      <PageHeader
+        title="What-If Scenario Simulation Engine"
+        subtitle="Simulate operating parameter modifications (electricity, fuel, runtime) and compute model-estimated CO₂ reduction."
+        badge={
+          <Badge variant="healthy" dot>
+            Scenario Simulator
+          </Badge>
+        }
+      >
+        <Button
+          variant="primary"
+          size="sm"
+          icon={TrendingDown}
+          onClick={() => navigate('/optimization')}
+        >
+          Run Optimization Engine
+        </Button>
+      </PageHeader>
 
       {/* Error Alert */}
       {error && (
-        <div className="bg-rose-50 border border-rose-200 rounded-xl p-4 text-xs text-rose-800 flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
-            <span>{error}</span>
-          </div>
-          <button onClick={() => setError(null)} className="text-slate-500 hover:text-slate-900 font-bold">✕</button>
-        </div>
+        <Alert type="error" title="Simulation Failed">
+          {error}
+        </Alert>
       )}
 
-      {/* Grid: Scenario Builder on Left, Interactive Simulation Tabs on Right */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+      {/* Grid: Scenario Builder on Left, Simulation Tabs on Right */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Left Column: Scenario Builder */}
         <div className="lg:col-span-5 space-y-6">
           <ScenarioBuilder
@@ -135,12 +154,12 @@ export const WhatIfAnalysis = () => {
 
         {/* Right Column: Simulation Output Tabs */}
         <div className="lg:col-span-7 space-y-6">
-          {/* Navigation Tabs */}
-          <div className="flex items-center space-x-2 bg-slate-100 p-1.5 rounded-2xl border border-slate-200 text-xs font-semibold overflow-x-auto">
+          {/* Navigation Tabs Bar */}
+          <div className="flex items-center space-x-2 bg-slate-100 p-1.5 rounded-xl border border-slate-200 text-xs font-semibold overflow-x-auto">
             <button
               onClick={() => setActiveTab('single')}
-              className={`px-4 py-2 rounded-xl transition-all flex items-center space-x-1.5 whitespace-nowrap ${
-                activeTab === 'single' ? 'bg-white text-cyan-700 border border-slate-200 shadow-2xs' : 'text-slate-600 hover:text-slate-900'
+              className={`px-3.5 py-1.5 rounded-lg transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
+                activeTab === 'single' ? 'bg-white text-emerald-700 font-semibold shadow-xs border border-slate-200' : 'text-slate-600 hover:text-slate-900'
               }`}
             >
               <Play className="w-3.5 h-3.5" /> <span>Single Simulation</span>
@@ -148,26 +167,26 @@ export const WhatIfAnalysis = () => {
 
             <button
               onClick={() => setActiveTab('compare')}
-              className={`px-4 py-2 rounded-xl transition-all flex items-center space-x-1.5 whitespace-nowrap ${
-                activeTab === 'compare' ? 'bg-white text-cyan-700 border border-slate-200 shadow-2xs' : 'text-slate-600 hover:text-slate-900'
+              className={`px-3.5 py-1.5 rounded-lg transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
+                activeTab === 'compare' ? 'bg-white text-emerald-700 font-semibold shadow-xs border border-slate-200' : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              <Table className="w-3.5 h-3.5" /> <span>Multi-Scenario Comparison</span>
+              <TableIcon className="w-3.5 h-3.5" /> <span>Multi-Scenario Comparison</span>
             </button>
 
             <button
               onClick={() => setActiveTab('sensitivity')}
-              className={`px-4 py-2 rounded-xl transition-all flex items-center space-x-1.5 whitespace-nowrap ${
-                activeTab === 'sensitivity' ? 'bg-white text-cyan-700 border border-slate-200 shadow-2xs' : 'text-slate-600 hover:text-slate-900'
+              className={`px-3.5 py-1.5 rounded-lg transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
+                activeTab === 'sensitivity' ? 'bg-white text-emerald-700 font-semibold shadow-xs border border-slate-200' : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              <Activity className="w-3.5 h-3.5" /> <span>Sensitivity Analysis</span>
+              <Activity className="w-3.5 h-3.5" /> <span>Sensitivity Curves</span>
             </button>
 
             <button
               onClick={() => setActiveTab('history')}
-              className={`px-4 py-2 rounded-xl transition-all flex items-center space-x-1.5 whitespace-nowrap ${
-                activeTab === 'history' ? 'bg-white text-cyan-700 border border-slate-200 shadow-2xs' : 'text-slate-600 hover:text-slate-900'
+              className={`px-3.5 py-1.5 rounded-lg transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
+                activeTab === 'history' ? 'bg-white text-emerald-700 font-semibold shadow-xs border border-slate-200' : 'text-slate-600 hover:text-slate-900'
               }`}
             >
               <BookmarkCheck className="w-3.5 h-3.5" /> <span>Saved History</span>
@@ -197,9 +216,9 @@ export const WhatIfAnalysis = () => {
           )}
 
           {activeTab === 'history' && (
-            <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-4">
+            <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-xs space-y-4">
               <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center">
-                <BookmarkCheck className="w-4 h-4 mr-1.5 text-cyan-600" /> Saved What-if Scenario History
+                <BookmarkCheck className="w-4 h-4 mr-1.5 text-emerald-600" /> Saved What-if Scenario History
               </h3>
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs font-sans">
@@ -217,7 +236,7 @@ export const WhatIfAnalysis = () => {
                     {savedScenarios.length > 0 ? (
                       savedScenarios.map((s, i) => (
                         <tr key={i} className="hover:bg-slate-50">
-                          <td className="py-2.5 px-3 text-cyan-700 font-bold">{s.scenario_id}</td>
+                          <td className="py-2.5 px-3 text-emerald-700 font-bold">{s.scenario_id}</td>
                           <td className="py-2.5 px-3 font-sans text-slate-800 font-semibold">{s.scenario_name}</td>
                           <td className="py-2.5 px-3 text-slate-500">{s.scenario_type}</td>
                           <td className="py-2.5 px-3 text-slate-900 font-bold">{s.ensemble_prediction ? Math.round(s.ensemble_prediction).toLocaleString() : 'N/A'} kg</td>

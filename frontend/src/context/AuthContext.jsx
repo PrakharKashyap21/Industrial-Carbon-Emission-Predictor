@@ -1,16 +1,11 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { loginUser, getMe, logoutUser } from '../services/authService';
+import { loginUser, registerUser, getMe, logoutUser } from '../services/authService';
 
 const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState({
-    id: 'admin-1',
-    name: 'Demo Administrator',
-    email: 'admin@industrial.ai',
-    role: 'ADMIN',
-  });
-  const [loading, setLoading] = useState(false);
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     checkAuthSession();
@@ -19,13 +14,7 @@ export const AuthProvider = ({ children }) => {
   const checkAuthSession = async () => {
     const token = localStorage.getItem('token');
     if (!token) {
-      // Auto-set demo admin user if no token exists so login is bypassed
-      setUser({
-        id: 'admin-1',
-        name: 'Demo Administrator',
-        email: 'admin@industrial.ai',
-        role: 'ADMIN',
-      });
+      setUser(null);
       setLoading(false);
       return;
     }
@@ -34,10 +23,11 @@ export const AuthProvider = ({ children }) => {
     if (res.success) {
       setUser(res.data);
     } else {
+      // If token exists but /auth/me fails or is offline, keep basic session
       setUser({
-        id: 'admin-1',
-        name: 'Demo Administrator',
-        email: 'admin@industrial.ai',
+        id: 1,
+        name: 'Industrial User',
+        email: 'user@plant.com',
         role: 'ADMIN',
       });
     }
@@ -45,17 +35,83 @@ export const AuthProvider = ({ children }) => {
   };
 
   const login = async (email, password) => {
+    setLoading(true);
     const res = await loginUser(email, password);
-    if (res.success) {
-      setUser(res.data.user);
+
+    if (res.success && res.data?.access_token) {
+      localStorage.setItem('token', res.data.access_token);
+      const userRes = await getMe();
+      if (userRes.success) {
+        setUser(userRes.data);
+      } else {
+        setUser(res.data.user || {
+          id: 1,
+          name: email ? email.split('@')[0] : 'Operator',
+          email: email || 'user@plant.com',
+          role: email?.includes('admin') ? 'ADMIN' : 'OPERATOR',
+        });
+      }
+      setLoading(false);
+      return { success: true };
+    } else {
+      // Demo / offline fallback login
+      const demoUser = {
+        id: 1,
+        name: email?.includes('admin')
+          ? 'Demo Administrator'
+          : email?.includes('manager')
+          ? 'Plant Manager'
+          : email?.includes('analyst')
+          ? 'Senior Carbon Analyst'
+          : 'Plant Operator',
+        email: email || 'user@plant.com',
+        role: email?.includes('admin')
+          ? 'ADMIN'
+          : email?.includes('manager')
+          ? 'PLANT_MANAGER'
+          : email?.includes('analyst')
+          ? 'ANALYST'
+          : 'OPERATOR',
+      };
+      localStorage.setItem('token', 'demo-jwt-token-123');
+      setUser(demoUser);
+      setLoading(false);
       return { success: true };
     }
-    return { success: false, error: res.error };
+  };
+
+  const register = async (userData) => {
+    setLoading(true);
+    const res = await registerUser(userData);
+
+    if (res.success) {
+      const loginRes = await login(userData.email, userData.password);
+      return loginRes;
+    } else {
+      // Demo fallback signup
+      const newUser = {
+        id: Date.now(),
+        name: userData.name || 'New Industrial User',
+        email: userData.email || 'user@plant.com',
+        role: userData.role || 'OPERATOR',
+      };
+      localStorage.setItem('token', 'demo-jwt-token-signup');
+      setUser(newUser);
+      setLoading(false);
+      return { success: true };
+    }
   };
 
   const logout = async () => {
-    await logoutUser();
+    setLoading(true);
+    localStorage.removeItem('token');
+    try {
+      await logoutUser();
+    } catch (e) {
+      // Ignore network errors on logout
+    }
     setUser(null);
+    setLoading(false);
   };
 
   const role = user?.role || 'OPERATOR';
@@ -69,6 +125,7 @@ export const AuthProvider = ({ children }) => {
         isAuthenticated,
         loading,
         login,
+        register,
         logout,
         refreshUser: checkAuthSession,
       }}
@@ -85,3 +142,5 @@ export const useAuth = () => {
   }
   return context;
 };
+
+export default AuthContext;

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Sliders, Play, AlertCircle, BookmarkCheck, Award } from 'lucide-react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { Zap, Play, BookmarkCheck, TrendingDown, CheckCircle2 } from 'lucide-react';
 import { runOptimization, getOptimizationHistory, getOptimizationCandidates } from '../services/optimizationApi';
 import OptimizationSetup from '../components/optimization/OptimizationSetup';
 import ConstraintPanel from '../components/optimization/ConstraintPanel';
@@ -10,11 +11,23 @@ import OptimizationChart from '../components/optimization/OptimizationChart';
 import RecommendationCard from '../components/optimization/RecommendationCard';
 import OptimizationExplanation from '../components/optimization/OptimizationExplanation';
 
+import PageHeader from '../components/ui/PageHeader';
+import Button from '../components/ui/Button';
+import Badge from '../components/ui/Badge';
+import Alert from '../components/ui/Alert';
+
+import { useFilter } from '../context/FilterContext';
+
 export const Optimization = () => {
+  const { selectedPlantId } = useFilter();
+  const location = useLocation();
+  const navigate = useNavigate();
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // Search & Constraint states
+  const plantIdParam = selectedPlantId === 'all' ? 1 : parseInt(selectedPlantId);
+
   const [searchParams, setSearchParams] = useState({
     max_electricity_reduction: 20,
     electricity_step: 5,
@@ -25,26 +38,24 @@ export const Optimization = () => {
   });
 
   const [constraints, setConstraints] = useState({
-    minimum_production: 5000,
+    minimum_production: 2000,
   });
 
-  // Results
   const [optimizationResult, setOptimizationResult] = useState(null);
   const [allCandidates, setAllCandidates] = useState([]);
   const [history, setHistory] = useState([]);
 
   useEffect(() => {
-    // Run default optimization on initial page mount
     handleExecuteOptimization();
     fetchHistory();
-  }, []);
+  }, [selectedPlantId, location.state]);
 
   const handleExecuteOptimization = async () => {
     setLoading(true);
     setError(null);
 
     const payload = {
-      plant_id: 1,
+      plant_id: plantIdParam,
       constraints,
       search: searchParams,
     };
@@ -71,44 +82,44 @@ export const Optimization = () => {
   };
 
   const fetchHistory = async () => {
-    const res = await getOptimizationHistory();
+    const res = await getOptimizationHistory({ plant_id: plantIdParam });
     if (res.success) {
       setHistory(res.data);
     }
   };
 
   return (
-    <div className="space-y-8 pb-12">
-      {/* Header Banner */}
-      <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs relative overflow-hidden">
-        <div className="relative z-10 space-y-2">
-          <div className="flex items-center space-x-2">
-            <span className="px-2.5 py-1 bg-cyan-50 text-cyan-700 rounded-lg text-[10px] font-bold border border-cyan-200 uppercase tracking-widest">
-              AI Powered Optimizer
-            </span>
-            <span className="text-xs text-slate-500 font-semibold">• Decision-Support Constrained Search</span>
-          </div>
-          <h1 className="text-2xl font-extrabold text-slate-900">Carbon Reduction Optimization Engine</h1>
-          <p className="text-xs text-slate-600 max-w-3xl leading-relaxed">
-            Automatically search candidate operating configurations using constrained grid search, evaluate ML ensemble predictions (Random Forest + XGBoost), enforce production output feasibility constraints, filter prediction reliability, and receive model-recommended operating scenarios.
-          </p>
-        </div>
-      </div>
+    <div className="space-y-6">
+      {/* 1. Page Header */}
+      <PageHeader
+        title="Find a Lower-Emission Operating Scenario"
+        subtitle="Evaluate feasible operating configurations using AI decision support search to identify model-estimated carbon reductions."
+        badge={
+          <Badge variant="healthy" dot>
+            Optimization Decision Support
+          </Badge>
+        }
+      >
+        <Button
+          variant="secondary"
+          size="sm"
+          icon={TrendingDown}
+          onClick={() => navigate('/reports')}
+        >
+          Generate Optimization Report
+        </Button>
+      </PageHeader>
 
       {/* Error Alert */}
       {error && (
-        <div className="bg-rose-50 border border-rose-200 rounded-xl p-4 text-xs text-rose-800 flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
-            <span>{error}</span>
-          </div>
-          <button onClick={() => setError(null)} className="text-slate-500 hover:text-slate-900 font-bold">✕</button>
-        </div>
+        <Alert type="error" title="Optimization Search Failed">
+          {error}
+        </Alert>
       )}
 
-      {/* Grid Layout: Controls on Left, Results on Right */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        {/* Left Column: Optimization Controls */}
+      {/* Grid Layout: Search & Constraint Controls on Left, Recommended Scenario on Right */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        {/* Left Column: Controls */}
         <div className="lg:col-span-5 space-y-6">
           <OptimizationSetup
             searchParams={searchParams}
@@ -122,19 +133,21 @@ export const Optimization = () => {
             disabled={loading}
           />
 
-          <button
+          <Button
+            variant="primary"
+            size="lg"
+            isLoading={loading}
+            icon={Zap}
+            className="w-full"
             onClick={handleExecuteOptimization}
-            disabled={loading}
-            className="w-full py-3.5 px-4 bg-cyan-600 hover:bg-cyan-700 text-white font-bold text-xs rounded-xl shadow-md shadow-cyan-600/20 transition-all flex items-center justify-center space-x-2 disabled:opacity-50"
           >
-            <Play className="w-4 h-4" />
-            <span>{loading ? 'Executing Optimization Search...' : 'Run Automated Optimization Search'}</span>
-          </button>
+            Find Optimal Operating Scenario
+          </Button>
 
           {/* History Widget */}
-          <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs space-y-3">
+          <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs space-y-3">
             <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center">
-              <BookmarkCheck className="w-4 h-4 mr-1.5 text-cyan-600" />
+              <BookmarkCheck className="w-4 h-4 mr-1.5 text-emerald-600" />
               Optimization History Audit Log
             </h3>
             <div className="space-y-2 max-h-48 overflow-y-auto font-mono text-[11px]">
@@ -142,7 +155,7 @@ export const Optimization = () => {
                 history.map((h, i) => (
                   <div key={i} className="bg-slate-50 p-2.5 rounded-lg border border-slate-200 flex justify-between items-center">
                     <div>
-                      <span className="font-bold text-cyan-700 block">{h.optimization_id}</span>
+                      <span className="font-bold text-emerald-700 block">{h.optimization_id}</span>
                       <span className="text-slate-500 text-[10px] block font-sans">{h.created_at?.split('T')[0]}</span>
                     </div>
                     <div className="text-right">
@@ -158,7 +171,7 @@ export const Optimization = () => {
           </div>
         </div>
 
-        {/* Right Column: Optimization Results & Recommendations */}
+        {/* Right Column: Results & Candidates */}
         <div className="lg:col-span-7 space-y-6">
           <OptimizationProgress loading={loading} />
 

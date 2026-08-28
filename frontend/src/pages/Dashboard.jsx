@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { getDashboardOverview } from '../services/dashboardApi';
-import DashboardHeader from '../components/dashboard/DashboardHeader';
+import { useFilter } from '../context/FilterContext';
 import KPIGrid from '../components/dashboard/KPIGrid';
 import EmissionTrendChart from '../components/dashboard/EmissionTrendChart';
 import PredictionVsActualChart from '../components/dashboard/PredictionVsActualChart';
@@ -11,11 +12,32 @@ import RecentPredictions from '../components/dashboard/RecentPredictions';
 import ModelPerformanceCard from '../components/dashboard/ModelPerformanceCard';
 import DataQualityCard from '../components/dashboard/DataQualityCard';
 import WhatIfEntryPointCard from '../components/dashboard/WhatIfEntryPointCard';
-import { AlertTriangle, RefreshCw } from 'lucide-react';
+
+import PageHeader from '../components/ui/PageHeader';
+import Button from '../components/ui/Button';
+import Badge from '../components/ui/Badge';
+import Alert from '../components/ui/Alert';
+import LoadingState from '../components/ui/LoadingState';
+import { RefreshCw, Cpu, SlidersHorizontal, FileText } from 'lucide-react';
 
 export const Dashboard = () => {
-  const [selectedPlantId, setSelectedPlantId] = useState(null);
-  const [days, setDays] = useState(30);
+  const { selectedPlantId, dateRange } = useFilter();
+  const navigate = useNavigate();
+
+  // Convert dateRange string to days count for backend API
+  const getDaysFromFilter = (range) => {
+    switch (range) {
+      case 'today': return 1;
+      case '7d': return 7;
+      case '30d': return 30;
+      case 'this_month': return 30;
+      case 'last_month': return 60;
+      default: return 30;
+    }
+  };
+
+  const days = getDaysFromFilter(dateRange);
+  const plantParam = selectedPlantId === 'all' ? null : selectedPlantId;
 
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -24,7 +46,7 @@ export const Dashboard = () => {
   const fetchData = async () => {
     setLoading(true);
     setError(null);
-    const res = await getDashboardOverview(selectedPlantId, days);
+    const res = await getDashboardOverview(plantParam, days);
     setLoading(false);
     if (res.success) {
       setData(res.data);
@@ -35,61 +57,78 @@ export const Dashboard = () => {
 
   useEffect(() => {
     fetchData();
-  }, [selectedPlantId, days]);
+  }, [selectedPlantId, dateRange]);
 
   return (
-    <div className="space-y-8 pb-12">
-      {/* 1. Header & Controls */}
-      <DashboardHeader
-        plant={data?.plant}
-        selectedPlantId={selectedPlantId}
-        onPlantChange={setSelectedPlantId}
-        days={days}
-        onDaysChange={setDays}
-        onRefresh={fetchData}
-        loading={loading}
-        lastUpdated={data?.data_quality?.latest_timestamp}
-      />
+    <div className="space-y-6">
+      {/* 1. Page Header with Quick Action Shortcuts */}
+      <PageHeader
+        title="Industrial Carbon Overview"
+        subtitle="Real-time CO₂ emission tracking, ensemble predictive analytics, and plant performance KPIs"
+        badge={
+          <Badge variant="healthy" dot>
+            System Operational
+          </Badge>
+        }
+      >
+        <Button
+          variant="outline"
+          size="sm"
+          icon={RefreshCw}
+          isLoading={loading}
+          onClick={fetchData}
+        >
+          Refresh Data
+        </Button>
+        <Button
+          variant="secondary"
+          size="sm"
+          icon={SlidersHorizontal}
+          onClick={() => navigate('/what-if')}
+        >
+          Run What-If
+        </Button>
+        <Button
+          variant="primary"
+          size="sm"
+          icon={Cpu}
+          onClick={() => navigate('/prediction-test')}
+        >
+          New Prediction
+        </Button>
+      </PageHeader>
 
-      {/* Error Banner */}
+      {/* Error Alert */}
       {error && (
-        <div className="bg-rose-950/40 border border-rose-800 text-rose-300 p-6 rounded-2xl text-xs flex items-center justify-between shadow-xl">
-          <div className="flex items-center space-x-2">
-            <AlertTriangle className="w-5 h-5 text-rose-400 shrink-0" />
-            <div>
-              <strong className="block text-rose-200">Unable to load dashboard data</strong>
-              <span>{error}</span>
-            </div>
-          </div>
-          <button
-            onClick={fetchData}
-            className="px-3.5 py-1.5 bg-rose-900 hover:bg-rose-800 text-white font-semibold text-xs rounded-xl border border-rose-700 transition-colors flex items-center space-x-1"
-          >
-            <RefreshCw className="w-3.5 h-3.5 mr-1" />
-            Retry
-          </button>
-        </div>
+        <Alert
+          type="error"
+          title="Unable to load dashboard analytics"
+          action={
+            <Button variant="outline" size="sm" onClick={fetchData}>
+              Retry
+            </Button>
+          }
+        >
+          {error}
+        </Alert>
       )}
 
       {/* Loading Skeleton */}
       {loading && !data && (
-        <div className="bg-slate-900/50 border border-slate-800 rounded-3xl p-12 text-center text-slate-400 text-xs space-y-3">
-          <RefreshCw className="w-6 h-6 animate-spin mx-auto text-cyan-400" />
-          <p className="font-semibold text-slate-300">Loading industrial analytics overview...</p>
-        </div>
+        <LoadingState message="Fetching real-time industrial telemetry & carbon metrics..." type="card" />
       )}
 
       {/* Main Dashboard Payload */}
       {data && (
-        <div className="space-y-8">
-          {/* 2. KPI Section */}
+        <div className="space-y-6">
+          {/* 2. Key Performance Indicators (KPI Grid) */}
           <KPIGrid kpis={data.kpis} />
 
-          {/* 3. Main CO2 Emission Trend */}
+          {/* 3. Main CO2 Emission & Production Trend */}
           <EmissionTrendChart trends={data.trends} />
 
-          {/* 4. Overlay & Resource Consumption Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          {/* 4. Prediction vs Actual & Resource Consumption Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
             <div className="lg:col-span-6">
               <PredictionVsActualChart trends={data.trends} />
             </div>
@@ -98,8 +137,8 @@ export const Dashboard = () => {
             </div>
           </div>
 
-          {/* 5. CO2 Intensity & Global SHAP Drivers Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          {/* 5. Intensity Trends & Key Feature Drivers */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
             <div className="lg:col-span-6">
               <EmissionIntensityChart trends={data.trends} />
             </div>
@@ -108,11 +147,11 @@ export const Dashboard = () => {
             </div>
           </div>
 
-          {/* Recent Prediction Lifecycle Audit History */}
+          {/* 6. Recent Prediction Lifecycle Audit History */}
           <RecentPredictions />
 
-          {/* 6. Model Registry, Data Quality & What-if Entry Card Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          {/* 7. Model Performance, Data Quality & What-if Quick Entry Card Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
             <div className="lg:col-span-4">
               <ModelPerformanceCard model={data.model} />
             </div>

@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 from typing import Dict, Any, Optional
 import pandas as pd
 from sqlalchemy.orm import Session
-from sqlalchemy import select, desc
+from sqlalchemy import select, desc, func
 
 from app.models.industrial_reading import IndustrialReading
 from app.models.prediction import Prediction
@@ -19,11 +19,21 @@ class MonitoringService:
 
     def run_monitoring_cycle(self, db: Session, plant_id: Optional[int] = None, days: int = 30) -> Dict[str, Any]:
         """Execute complete monitoring evaluation cycle and persist snapshot to PostgreSQL database."""
-        # 1. Fetch recent readings & predictions
-        cutoff = datetime.utcnow() - timedelta(days=days)
+        # 1. Fetch recent readings & predictions relative to max timestamp
+        max_ts_read_query = select(func.max(IndustrialReading.timestamp))
+        max_ts_pred_query = select(func.max(Prediction.prediction_timestamp))
+        if plant_id:
+            max_ts_read_query = max_ts_read_query.where(IndustrialReading.plant_id == plant_id)
+            max_ts_pred_query = max_ts_pred_query.where(Prediction.plant_id == plant_id)
 
-        read_query = select(IndustrialReading).where(IndustrialReading.timestamp >= cutoff)
-        pred_query = select(Prediction).where(Prediction.prediction_timestamp >= cutoff)
+        max_ts_read = db.execute(max_ts_read_query).scalar() or datetime.utcnow()
+        max_ts_pred = db.execute(max_ts_pred_query).scalar() or datetime.utcnow()
+
+        cutoff_read = max_ts_read - timedelta(days=days)
+        cutoff_pred = max_ts_pred - timedelta(days=days)
+
+        read_query = select(IndustrialReading).where(IndustrialReading.timestamp >= cutoff_read)
+        pred_query = select(Prediction).where(Prediction.prediction_timestamp >= cutoff_pred)
 
         if plant_id:
             read_query = read_query.where(IndustrialReading.plant_id == plant_id)
@@ -204,6 +214,10 @@ class MonitoringService:
             for d in drift_objs
         ]
 
+        low_cnt = sum(1 for d in drift_objs if d.drift_status == "low")
+        mod_cnt = sum(1 for d in drift_objs if d.drift_status == "moderate")
+        high_cnt = sum(1 for d in drift_objs if d.drift_status == "high")
+
         return {
             "snapshot_id": latest.id,
             "monitoring_date": latest.monitoring_date.isoformat(),
@@ -216,6 +230,9 @@ class MonitoringService:
             "missing_records": latest.missing_records,
             "invalid_records": latest.invalid_records,
             "duplicate_records": latest.duplicate_records,
+            "low_drift_count": low_cnt,
+            "moderate_drift_count": mod_cnt,
+            "high_drift_count": high_cnt,
             "drift_features": drift_features,
             "active_alerts": active_alerts,
         }

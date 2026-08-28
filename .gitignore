@@ -54,5 +54,13 @@ build/
 !industrial_carbon.db
 !backend/industrial_carbon.db
 
-# Docker
-docker-compose.override.yml
+# Generated Reports
+backend/storage/reports/
+backend/storage/exports/
+*.pdf
+*.xlsx
+*.exec.png
+*.opt.png
+*.pred.png
+*.whatif.png
+*.mon.png

@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 from typing import Dict, Any, List, Optional
 from sqlalchemy.orm import Session
-from sqlalchemy import select, desc
+from sqlalchemy import select, desc, func
 
 from app.models.industrial_reading import IndustrialReading
 from app.models.prediction import Prediction
@@ -27,8 +27,13 @@ class AnalyticsService:
         plant_id: Optional[int] = None,
         days: int = 30,
     ) -> List[Dict[str, Any]]:
-        """Fetch historical readings from database within date cutoff."""
-        cutoff = datetime.utcnow() - timedelta(days=days)
+        """Fetch historical readings from database within date cutoff relative to max timestamp."""
+        max_ts_query = select(func.max(IndustrialReading.timestamp))
+        if plant_id:
+            max_ts_query = max_ts_query.where(IndustrialReading.plant_id == plant_id)
+        max_ts = db.execute(max_ts_query).scalar() or datetime.utcnow()
+
+        cutoff = max_ts - timedelta(days=days)
         query = select(IndustrialReading).where(IndustrialReading.timestamp >= cutoff)
 
         if plant_id:
@@ -52,7 +57,7 @@ class AnalyticsService:
                 "temperature_c": r.temperature_c,
                 "pressure_bar": r.pressure_bar,
                 "previous_co2_emission_kg": r.previous_co2_emission_kg,
-                "co2_emission_kg": r.co2_emission_kg,
+                "co2_emission_kg": r.actual_co2_emission_kg,
             })
         return results
 

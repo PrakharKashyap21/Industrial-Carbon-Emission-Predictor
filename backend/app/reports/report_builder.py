@@ -74,16 +74,29 @@ class ReportBuilder:
             query = query.where(Prediction.id == resource_id)
         elif plant_id:
             query = query.where(Prediction.plant_id == plant_id)
-        query = query.order_by(desc(Prediction.prediction_timestamp)).limit(1)
+        query = query.order_by(desc(Prediction.prediction_timestamp)).limit(10)
 
-        pred = db.execute(query).scalar_one_or_none()
+        preds = db.execute(query).scalars().all()
+        pred = preds[0] if preds else None
+
         if not pred:
             return {
-                "title": "Industrial CO₂ Emission Prediction Report",
+                "title": "Industrial CO2 Emission Prediction Report",
                 "prediction": {"ensemble_prediction_kg": 8500.0, "rf_prediction_kg": 8450.0, "xgb_prediction_kg": 8540.0, "reliability": "High"},
                 "model_info": {"model_name": "RF + XGBoost Ensemble", "model_version": "v1.0"},
                 "drivers": ["electricity_consumption_kwh", "diesel_consumption_liters", "machine_runtime_hours"],
+                "trend_data": [],
             }
+
+        history = [
+            {
+                "date": p.prediction_timestamp.strftime("%b %d"),
+                "ensemble": round(p.ensemble_prediction, 2),
+                "rf": round(p.rf_prediction, 2),
+                "xgb": round(p.xgb_prediction, 2),
+            }
+            for p in reversed(preds)
+        ]
 
         return {
             "title": f"Prediction Report — PRED#{pred.id}",
@@ -105,6 +118,7 @@ class ReportBuilder:
                 "model_type": pred.model_type or "rf_xgb_ensemble",
             },
             "drivers": ["Electricity Consumption (kWh)", "Diesel Fuel (Liters)", "Machine Runtime (Hours)"],
+            "trend_data": history,
         }
 
     def _build_whatif_data(self, db: Session, plant_id: Optional[int], resource_id: Optional[int]) -> Dict[str, Any]:
@@ -124,22 +138,24 @@ class ReportBuilder:
                 "absolute_diff_kg": -550.0,
                 "percentage_change": -6.47,
                 "interpretation": "Model-estimated emission reduction of 6.47% under modified operational inputs.",
+                "chart_type": "what_if",
             }
 
         res_obj = sc.results[0] if sc.results else None
-        base_pred = res_obj.baseline_co2 if res_obj else 8500.0
-        scen_pred = res_obj.scenario_co2 if res_obj else 7950.0
-        diff = res_obj.absolute_diff if res_obj else -550.0
-        pct = res_obj.pct_change if res_obj else -6.47
+        base_pred = res_obj.baseline_prediction if res_obj else 8500.0
+        scen_pred = res_obj.ensemble_prediction if res_obj else 7950.0
+        diff = res_obj.co2_change if res_obj else -550.0
+        pct = res_obj.co2_change_percentage if res_obj else -6.47
 
         return {
-            "title": f"What-if Scenario Analysis — {sc.name}",
-            "scenario_name": sc.name,
+            "title": f"What-if Scenario Analysis — {sc.scenario_name}",
+            "scenario_name": sc.scenario_name,
             "baseline_prediction_kg": round(base_pred, 2),
             "scenario_prediction_kg": round(scen_pred, 2),
             "absolute_diff_kg": round(diff, 2),
             "percentage_change": round(pct, 2),
             "interpretation": f"Model-estimated emission change of {pct:+.2f}% under modified operational conditions.",
+            "chart_type": "what_if",
         }
 
     def _build_optimization_data(self, db: Session, plant_id: Optional[int], resource_id: Optional[int]) -> Dict[str, Any]:
@@ -159,6 +175,7 @@ class ReportBuilder:
                 "estimated_reduction_kg": 1075.0,
                 "estimated_reduction_pct": 12.65,
                 "feasibility_status": "FEASIBLE",
+                "chart_type": "optimization",
             }
 
         rec = op.results[0] if op and op.results else None
@@ -175,12 +192,14 @@ class ReportBuilder:
             "estimated_reduction_pct": round(red_pct, 2),
             "feasibility_status": "FEASIBLE",
             "candidates_evaluated": op.candidates_evaluated if op else 125,
+            "chart_type": "optimization",
         }
 
     def _build_analytics_data(self, db: Session, plant_id: Optional[int], period_start: datetime, period_end: datetime) -> Dict[str, Any]:
         days_diff = max(1, (period_end - period_start).days)
 
         overview = analytics_service.get_overview(db, plant_id=plant_id, days=days_diff)
+        trend_data = analytics_service.get_emission_trend(db, plant_id=plant_id, days=days_diff)
         intensity = analytics_service.get_emission_intensity(db, plant_id=plant_id, days=days_diff)
         anomalies = analytics_service.get_anomaly_analytics(db, plant_id=plant_id, days=days_diff)
         insights = analytics_service.get_insights(db, plant_id=plant_id, days=days_diff)
@@ -190,10 +209,12 @@ class ReportBuilder:
         return {
             "title": "Industrial Analytics & Emission Performance Report",
             "kpis": overview.get("kpis", {}),
+            "trend_data": trend_data,
             "intensity": intensity,
             "anomalies_count": len(anom_list),
             "anomalies_list": anom_list[:5],
             "insights": insights[:5] if isinstance(insights, list) else [],
+            "chart_type": "trend",
         }
 
     def _build_monitoring_data(self, db: Session, plant_id: Optional[int]) -> Dict[str, Any]:
@@ -208,15 +229,18 @@ class ReportBuilder:
             "data_quality_score": snapshot.get("data_quality_score", 95.0),
             "drift_status": drift.get("drift_status", "LOW_DRIFT"),
             "drift_score": drift.get("overall_drift_score", 0.05),
+            "drift_features": drift.get("drift_features", []),
             "alerts_count": len(alerts),
             "alerts": alerts[:5],
             "reliability": "High",
+            "chart_type": "monitoring",
         }
 
     def _build_executive_data(self, db: Session, plant_id: Optional[int], period_start: datetime, period_end: datetime) -> Dict[str, Any]:
         days_diff = max(1, (period_end - period_start).days)
 
         overview = analytics_service.get_overview(db, plant_id=plant_id, days=days_diff)
+        trend_data = analytics_service.get_emission_trend(db, plant_id=plant_id, days=days_diff)
         intensity = analytics_service.get_emission_intensity(db, plant_id=plant_id, days=days_diff)
         anomalies = analytics_service.get_anomaly_analytics(db, plant_id=plant_id, days=days_diff)
         insights = analytics_service.get_insights(db, plant_id=plant_id, days=days_diff)
@@ -240,11 +264,13 @@ class ReportBuilder:
             "title": "Executive Industrial Carbon Performance Report",
             "executive_summary": summary_narrative,
             "kpis": kpis,
+            "trend_data": trend_data,
             "emission_intensity": em_int,
             "intensity_pop_pct": intensity.get("pop_change_pct", -7.2),
             "anomalies_count": len(anom_list),
             "insights": insights[:4] if isinstance(insights, list) else [],
             "optimization_opportunity_pct": 12.6,
+            "chart_type": "trend",
         }
 
 

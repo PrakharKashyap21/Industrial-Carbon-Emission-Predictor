@@ -6,6 +6,7 @@ import ProtectedRoute from './components/auth/ProtectedRoute';
 import RoleGuard from './components/auth/RoleGuard';
 
 import Login from './pages/Login';
+import Register from './pages/Register';
 import Profile from './pages/Profile';
 import UserManagement from './pages/UserManagement';
 import AccessDenied from './pages/AccessDenied';
@@ -29,7 +30,8 @@ function App() {
       <Router>
         <MainLayout>
           <Routes>
-            {/* Public Auth Route */}
+            {/* Public Auth Routes */}
+            <Route path="/signup" element={<Register />} />
             <Route path="/login" element={<Login />} />
             <Route path="/access-denied" element={<AccessDenied />} />
 
@@ -62,7 +64,7 @@ function App() {
               }
             />
 
-            <Route path="*" element={<Navigate to="/dashboard" replace />} />
+            <Route path="*" element={<Navigate to="/signup" replace />} />
           </Routes>
         </MainLayout>
       </Router>

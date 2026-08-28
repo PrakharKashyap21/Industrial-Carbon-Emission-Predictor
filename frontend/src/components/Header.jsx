@@ -1,331 +1,206 @@
-import React, { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { Activity, Factory, Cpu, HelpCircle, Sliders, LayoutDashboard, Award, Users, User, LogOut, FileText, Menu, X } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import {
+  Menu,
+  Bell,
+  LogOut,
+  User,
+  Factory,
+  Calendar,
+  CheckCircle2,
+  AlertCircle,
+  ChevronDown,
+} from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useFilter } from '../context/FilterContext';
+import { getHealthCheck } from '../services/api';
 
-export const Header = () => {
+export const Header = ({ onSidebarToggle }) => {
+  const { user, logout } = useAuth();
+  const { selectedPlantId, setSelectedPlantId, dateRange, setDateRange, plants } = useFilter();
+  const navigate = useNavigate();
   const location = useLocation();
-  const { user, role, isAuthenticated, logout } = useAuth();
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  const toggleMobileMenu = () => setMobileMenuOpen(!mobileMenuOpen);
+  const [healthStatus, setHealthStatus] = useState({ online: true, latency: 12 });
+  const [showUserMenu, setShowUserMenu] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+    const checkHealth = async () => {
+      const res = await getHealthCheck();
+      if (isMounted) {
+        if (res.success) {
+          setHealthStatus({ online: true, latency: res.latency || 15 });
+        } else {
+          setHealthStatus({ online: false, latency: 0 });
+        }
+      }
+    };
+    checkHealth();
+    const interval = setInterval(checkHealth, 45000);
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
+  }, []);
+
+  const handleLogout = async () => {
+    await logout();
+    navigate('/signup');
+  };
+
+  // Map route to title
+  const getPageTitle = () => {
+    const path = location.pathname;
+    if (path === '/' || path === '/dashboard') return 'Industrial Carbon Overview';
+    if (path.startsWith('/prediction-test') || path.startsWith('/predictions')) return 'CO₂ Emission Prediction';
+    if (path.startsWith('/explain-prediction') || path.startsWith('/model-insights')) return 'SHAP & Feature Contributions';
+    if (path.startsWith('/what-if')) return 'What-If Scenario Simulation';
+    if (path.startsWith('/optimization')) return 'Emission Optimization Engine';
+    if (path.startsWith('/analytics')) return 'Industrial Analytics & Trends';
+    if (path.startsWith('/monitoring')) return 'Model & Data Monitoring';
+    if (path.startsWith('/reports')) return 'Carbon Intelligence Reports';
+    if (path.startsWith('/users')) return 'User & RBAC Administration';
+    if (path.startsWith('/profile')) return 'User Profile & Settings';
+    return 'Industrial Carbon Emission System';
+  };
 
   return (
-    <header className="border-b border-slate-200 bg-white/95 backdrop-blur-md sticky top-0 z-50 shadow-xs">
-      <div className="max-w-[1440px] mx-auto px-3 sm:px-6 lg:px-8 py-2.5 flex items-center justify-between gap-2 sm:gap-4">
-        {/* Brand & Logo */}
-        <Link to="/dashboard" className="flex items-center space-x-2.5 group shrink-0">
-          <div className="p-2 bg-gradient-to-tr from-cyan-600 to-blue-600 rounded-xl shadow-md shadow-cyan-600/20 text-white">
-            <Factory className="w-5 h-5 sm:w-6 sm:h-6" />
-          </div>
+    <header className="sticky top-0 z-20 bg-white border-b border-slate-200 shadow-2xs">
+      <div className="px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
+        {/* Left: Mobile sidebar toggle & Page Title */}
+        <div className="flex items-center gap-3">
+          <button
+            onClick={onSidebarToggle}
+            className="p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors focus:outline-none"
+            title="Toggle Sidebar"
+          >
+            <Menu className="w-5 h-5" />
+          </button>
+
           <div>
-            <h1 className="text-sm sm:text-base font-bold text-slate-900 leading-tight whitespace-nowrap">
-              Industrial Carbon System
+            <h1 className="text-base font-bold text-slate-900 tracking-tight flex items-center gap-2">
+              <span>{getPageTitle()}</span>
             </h1>
-            <p className="text-[10px] text-slate-500 font-medium hidden 2xl:block whitespace-nowrap">
-              AI-Powered Environmental & Emission Intelligence
-            </p>
           </div>
-        </Link>
+        </div>
 
-        {/* Desktop Navigation */}
-        {isAuthenticated && (
-          <nav className="hidden xl:flex items-center space-x-0.5 xl:space-x-1 pl-3 border-l border-slate-200 min-w-0">
-            <Link
-              to="/dashboard"
-              className={`px-2.5 py-1.5 rounded-lg text-[11px] xl:text-xs font-semibold transition-colors flex items-center whitespace-nowrap ${
-                location.pathname === '/dashboard' || location.pathname === '/'
-                  ? 'bg-cyan-50 text-cyan-700 border border-cyan-200 shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-              }`}
+        {/* Center/Right: Global Filters & Controls */}
+        <div className="flex items-center gap-3">
+          {/* Plant Selector Filter */}
+          <div className="hidden sm:flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-700">
+            <Factory className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+            <select
+              value={selectedPlantId}
+              onChange={(e) => setSelectedPlantId(e.target.value)}
+              className="bg-transparent border-none text-xs font-semibold text-slate-800 focus:outline-none cursor-pointer pr-1"
             >
-              <LayoutDashboard className="w-3.5 h-3.5 mr-1 shrink-0" />
-              Dashboard
-            </Link>
+              <option value="all">All Authorized Plants</option>
+              {plants.map((p) => (
+                <option key={p.id} value={p.id.toString()}>
+                  {p.plant_name} ({p.plant_code})
+                </option>
+              ))}
+            </select>
+          </div>
 
-            <Link
-              to="/prediction-test"
-              className={`px-2.5 py-1.5 rounded-lg text-[11px] xl:text-xs font-semibold transition-colors flex items-center whitespace-nowrap ${
-                location.pathname === '/prediction-test'
-                  ? 'bg-cyan-50 text-cyan-700 border border-cyan-200 shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-              }`}
+          {/* Date Range Selector */}
+          <div className="hidden md:flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-700">
+            <Calendar className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+            <select
+              value={dateRange}
+              onChange={(e) => setDateRange(e.target.value)}
+              className="bg-transparent border-none text-xs font-medium text-slate-800 focus:outline-none cursor-pointer"
             >
-              <Cpu className="w-3.5 h-3.5 mr-1 shrink-0" />
-              Predictions
-            </Link>
+              <option value="today">Today</option>
+              <option value="7d">Last 7 Days</option>
+              <option value="30d">Last 30 Days</option>
+              <option value="this_month">This Month</option>
+              <option value="last_month">Last Month</option>
+            </select>
+          </div>
 
-            {role !== 'OPERATOR' && (
-              <>
-                <Link
-                  to="/explain-prediction"
-                  className={`px-2.5 py-1.5 rounded-lg text-[11px] xl:text-xs font-semibold transition-colors flex items-center whitespace-nowrap ${
-                    location.pathname === '/explain-prediction'
-                      ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 shadow-xs'
-                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-                  }`}
-                >
-                  <HelpCircle className="w-3.5 h-3.5 mr-1 shrink-0" />
-                  SHAP
-                </Link>
+          {/* System Health Pill */}
+          <div className="hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium border bg-emerald-50 border-emerald-200 text-emerald-800">
+            <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+            <span>AI Backend: <strong className="font-mono">{healthStatus.latency}ms</strong></span>
+          </div>
 
-                <Link
-                  to="/what-if"
-                  className={`px-2.5 py-1.5 rounded-lg text-[11px] xl:text-xs font-semibold transition-colors flex items-center whitespace-nowrap ${
-                    location.pathname === '/what-if'
-                      ? 'bg-cyan-50 text-cyan-700 border border-cyan-200 shadow-xs'
-                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-                  }`}
-                >
-                  <Sliders className="w-3.5 h-3.5 mr-1 text-cyan-600 shrink-0" />
-                  What-if
-                </Link>
-
-                <Link
-                  to="/optimization"
-                  className={`px-2.5 py-1.5 rounded-lg text-[11px] xl:text-xs font-semibold transition-colors flex items-center whitespace-nowrap ${
-                    location.pathname === '/optimization'
-                      ? 'bg-cyan-50 text-cyan-700 border border-cyan-200 shadow-xs'
-                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-                  }`}
-                >
-                  <Award className="w-3.5 h-3.5 mr-1 text-cyan-600 shrink-0" />
-                  Optimization
-                </Link>
-
-                <Link
-                  to="/analytics"
-                  className={`px-2.5 py-1.5 rounded-lg text-[11px] xl:text-xs font-semibold transition-colors flex items-center whitespace-nowrap ${
-                    location.pathname === '/analytics'
-                      ? 'bg-cyan-50 text-cyan-700 border border-cyan-200 shadow-xs'
-                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-                  }`}
-                >
-                  <Activity className="w-3.5 h-3.5 mr-1 text-cyan-600 shrink-0" />
-                  Analytics
-                </Link>
-              </>
-            )}
-
-            <Link
-              to="/monitoring"
-              className={`px-2.5 py-1.5 rounded-lg text-[11px] xl:text-xs font-semibold transition-colors flex items-center whitespace-nowrap ${
-                location.pathname === '/monitoring'
-                  ? 'bg-cyan-50 text-cyan-700 border border-cyan-200 shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-              }`}
-            >
-              <Activity className="w-3.5 h-3.5 mr-1 shrink-0" />
-              Monitoring
-            </Link>
-
-            <Link
-              to="/reports"
-              className={`px-2.5 py-1.5 rounded-lg text-[11px] xl:text-xs font-semibold transition-colors flex items-center whitespace-nowrap ${
-                location.pathname === '/reports' || location.pathname.startsWith('/reports/')
-                  ? 'bg-cyan-50 text-cyan-700 border border-cyan-200 shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-              }`}
-            >
-              <FileText className="w-3.5 h-3.5 mr-1 text-cyan-600 shrink-0" />
-              Reports
-            </Link>
-
-            {role === 'ADMIN' && (
-              <Link
-                to="/users"
-                className={`px-2.5 py-1.5 rounded-lg text-[11px] xl:text-xs font-semibold transition-colors flex items-center whitespace-nowrap ${
-                  location.pathname === '/users'
-                    ? 'bg-cyan-50 text-cyan-700 border border-cyan-200 shadow-xs'
-                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-                }`}
-              >
-                <Users className="w-3.5 h-3.5 mr-1 text-cyan-600 shrink-0" />
-                Users
-              </Link>
-            )}
-          </nav>
-        )}
-
-        {/* Desktop Profile & Hamburger Toggle */}
-        <div className="flex items-center space-x-2 shrink-0">
-          {isAuthenticated ? (
-            <div className="hidden sm:flex items-center space-x-2">
-              <Link
-                to="/profile"
-                className="flex items-center space-x-2 px-2.5 py-1.5 rounded-xl bg-slate-100 border border-slate-200 text-xs text-slate-800 hover:border-cyan-500 transition-colors font-mono shadow-2xs whitespace-nowrap"
-              >
-                <User className="w-3.5 h-3.5 text-cyan-600 shrink-0" />
-                <span className="font-semibold max-w-[120px] 2xl:max-w-none truncate">{user?.name}</span>
-                <span className="hidden 2xl:inline-block px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-cyan-50 text-cyan-700 border border-cyan-200">
-                  AI Engine
-                </span>
-              </Link>
-              <button
-                onClick={logout}
-                title="Sign Out"
-                className="p-2 rounded-xl bg-slate-100 border border-slate-200 text-slate-600 hover:text-rose-600 hover:border-rose-300 transition-colors"
-              >
-                <LogOut className="w-4 h-4" />
-              </button>
-            </div>
-          ) : (
-            <Link
-              to="/login"
-              className="px-4 py-2 rounded-xl text-xs font-bold bg-cyan-600 hover:bg-cyan-700 text-white shadow-md shadow-cyan-600/20 whitespace-nowrap"
-            >
-              Sign In
-            </Link>
-          )}
-
-          {/* Mobile Hamburger Toggle Button */}
-          {isAuthenticated && (
+          {/* Notifications Dropdown */}
+          <div className="relative">
             <button
-              onClick={toggleMobileMenu}
-              className="xl:hidden p-2 rounded-xl bg-slate-100 border border-slate-200 text-slate-700 hover:bg-slate-200 transition-colors"
-              aria-label="Toggle navigation menu"
+              onClick={() => setShowNotifications(!showNotifications)}
+              aria-label="View notifications"
+              className="p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors relative"
             >
-              {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+              <Bell className="w-4 h-4" />
+              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-emerald-500 rounded-full ring-2 ring-white" />
             </button>
-          )}
+
+            {showNotifications && (
+              <div className="absolute right-0 mt-2 w-72 bg-white rounded-xl shadow-xl border border-slate-200 py-2 z-50 text-xs">
+                <div className="px-3 py-2 border-b border-slate-100 font-semibold text-slate-800 flex justify-between items-center">
+                  <span>System Alerts</span>
+                  <span className="text-[10px] bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded-full">Active</span>
+                </div>
+                <div className="p-3 space-y-2">
+                  <div className="flex gap-2 text-slate-600">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-medium text-slate-800">Model Monitoring Healthy</p>
+                      <p className="text-[11px] text-slate-500">Feature PSI values within normal range.</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* User Profile Menu */}
+          <div className="relative">
+            <button
+              onClick={() => setShowUserMenu(!showUserMenu)}
+              className="flex items-center gap-2 p-1.5 hover:bg-slate-100 rounded-lg transition-colors"
+            >
+              <div className="w-7 h-7 rounded-full bg-slate-800 text-white font-semibold text-xs flex items-center justify-center">
+                {user?.username?.charAt(0)?.toUpperCase() || 'U'}
+              </div>
+              <ChevronDown className="w-3.5 h-3.5 text-slate-500 hidden sm:block" />
+            </button>
+
+            {showUserMenu && (
+              <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-slate-200 py-1.5 z-50 text-xs">
+                <div className="px-4 py-2.5 border-b border-slate-100">
+                  <p className="font-semibold text-slate-900">{user?.username || 'Operator'}</p>
+                  <p className="text-slate-500 text-[11px] truncate">{user?.email || 'user@plant.com'}</p>
+                  <span className="inline-block mt-1 text-[10px] font-mono bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded-xs uppercase">
+                    Role: {user?.role || 'OPERATOR'}
+                  </span>
+                </div>
+                <button
+                  onClick={() => {
+                    setShowUserMenu(false);
+                    navigate('/profile');
+                  }}
+                  className="w-full px-4 py-2 text-left hover:bg-slate-50 flex items-center gap-2 text-slate-700 font-medium"
+                >
+                  <User className="w-3.5 h-3.5 text-slate-400" />
+                  <span>Profile & Settings</span>
+                </button>
+                <div className="border-t border-slate-100 my-1" />
+                <button
+                  onClick={handleLogout}
+                  className="w-full px-4 py-2 text-left hover:bg-rose-50 text-rose-700 font-medium flex items-center gap-2"
+                >
+                  <LogOut className="w-3.5 h-3.5 text-rose-500" />
+                  <span>Sign Out</span>
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
-
-      {/* Mobile Collapsible Navigation Menu */}
-      {isAuthenticated && mobileMenuOpen && (
-        <div className="lg:hidden bg-white border-t border-slate-200 px-4 py-3 space-y-2 shadow-lg animate-in slide-in-from-top-2 duration-200">
-          <div className="grid grid-cols-2 gap-2 pb-3 border-b border-slate-100">
-            <Link
-              to="/dashboard"
-              onClick={() => setMobileMenuOpen(false)}
-              className={`p-2.5 rounded-xl text-xs font-semibold flex items-center ${
-                location.pathname === '/dashboard' || location.pathname === '/'
-                  ? 'bg-cyan-50 text-cyan-700 border border-cyan-200'
-                  : 'bg-slate-50 text-slate-700'
-              }`}
-            >
-              <LayoutDashboard className="w-4 h-4 mr-2 text-cyan-600" />
-              Dashboard
-            </Link>
-
-            <Link
-              to="/prediction-test"
-              onClick={() => setMobileMenuOpen(false)}
-              className={`p-2.5 rounded-xl text-xs font-semibold flex items-center ${
-                location.pathname === '/prediction-test'
-                  ? 'bg-cyan-50 text-cyan-700 border border-cyan-200'
-                  : 'bg-slate-50 text-slate-700'
-              }`}
-            >
-              <Cpu className="w-4 h-4 mr-2 text-cyan-600" />
-              Predictions
-            </Link>
-
-            {role !== 'OPERATOR' && (
-              <>
-                <Link
-                  to="/explain-prediction"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className={`p-2.5 rounded-xl text-xs font-semibold flex items-center ${
-                    location.pathname === '/explain-prediction'
-                      ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                      : 'bg-slate-50 text-slate-700'
-                  }`}
-                >
-                  <HelpCircle className="w-4 h-4 mr-2 text-emerald-600" />
-                  SHAP Driver
-                </Link>
-
-                <Link
-                  to="/what-if"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className={`p-2.5 rounded-xl text-xs font-semibold flex items-center ${
-                    location.pathname === '/what-if'
-                      ? 'bg-cyan-50 text-cyan-700 border border-cyan-200'
-                      : 'bg-slate-50 text-slate-700'
-                  }`}
-                >
-                  <Sliders className="w-4 h-4 mr-2 text-cyan-600" />
-                  What-if
-                </Link>
-
-                <Link
-                  to="/optimization"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className={`p-2.5 rounded-xl text-xs font-semibold flex items-center ${
-                    location.pathname === '/optimization'
-                      ? 'bg-cyan-50 text-cyan-700 border border-cyan-200'
-                      : 'bg-slate-50 text-slate-700'
-                  }`}
-                >
-                  <Award className="w-4 h-4 mr-2 text-cyan-600" />
-                  Optimization
-                </Link>
-
-                <Link
-                  to="/analytics"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className={`p-2.5 rounded-xl text-xs font-semibold flex items-center ${
-                    location.pathname === '/analytics'
-                      ? 'bg-cyan-50 text-cyan-700 border border-cyan-200'
-                      : 'bg-slate-50 text-slate-700'
-                  }`}
-                >
-                  <Activity className="w-4 h-4 mr-2 text-cyan-600" />
-                  Analytics
-                </Link>
-              </>
-            )}
-
-            <Link
-              to="/monitoring"
-              onClick={() => setMobileMenuOpen(false)}
-              className={`p-2.5 rounded-xl text-xs font-semibold flex items-center ${
-                location.pathname === '/monitoring'
-                  ? 'bg-cyan-50 text-cyan-700 border border-cyan-200'
-                  : 'bg-slate-50 text-slate-700'
-              }`}
-            >
-              <Activity className="w-4 h-4 mr-2 text-cyan-600" />
-              Monitoring
-            </Link>
-
-            <Link
-              to="/reports"
-              onClick={() => setMobileMenuOpen(false)}
-              className={`p-2.5 rounded-xl text-xs font-semibold flex items-center ${
-                location.pathname === '/reports'
-                  ? 'bg-cyan-50 text-cyan-700 border border-cyan-200'
-                  : 'bg-slate-50 text-slate-700'
-              }`}
-            >
-              <FileText className="w-4 h-4 mr-2 text-cyan-600" />
-              Reports
-            </Link>
-          </div>
-
-          <div className="flex items-center justify-between pt-1">
-            <Link
-              to="/profile"
-              onClick={() => setMobileMenuOpen(false)}
-              className="flex items-center space-x-2 text-xs font-semibold text-slate-800"
-            >
-              <User className="w-4 h-4 text-cyan-600" />
-              <span>{user?.name}</span>
-            </Link>
-            <button
-              onClick={() => {
-                setMobileMenuOpen(false);
-                logout();
-              }}
-              className="px-3 py-1.5 rounded-lg bg-rose-50 text-rose-700 border border-rose-200 text-xs font-bold flex items-center space-x-1"
-            >
-              <LogOut className="w-3.5 h-3.5 mr-1" />
-              Sign Out
-            </button>
-          </div>
-        </div>
-      )}
     </header>
   );
 };

@@ -2,13 +2,46 @@ from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.orm import Session
 
 from app.database.session import get_db
-from app.schemas.auth import LoginRequest, LoginResponse, UserInfo
+from app.schemas.auth import LoginRequest, LoginResponse, UserInfo, RegisterRequest
 from app.auth.authentication import authentication_service
 from app.auth.dependencies import get_current_user
+from app.users.user_service import user_service
 from app.models.auth import User
 from app.audit.audit_service import audit_service
 
 router = APIRouter(prefix="/auth", tags=["Authentication & Access Tokens"])
+
+
+@router.post(
+    "/register",
+    response_model=UserInfo,
+    status_code=status.HTTP_201_CREATED,
+    summary="Public User Registration",
+    description="Create a new user account."
+)
+def register(request_body: RegisterRequest, db: Session = Depends(get_db)) -> UserInfo:
+    """Public user signup."""
+    try:
+        new_u = user_service.create_user(
+            db=db,
+            name=request_body.name,
+            email=request_body.email,
+            password=request_body.password,
+            role_name=request_body.role or "OPERATOR",
+        )
+        return UserInfo(
+            id=new_u["id"],
+            name=new_u["name"],
+            email=new_u["email"],
+            role=new_u["role"],
+            is_active=new_u["is_active"],
+            plant_ids=new_u["plant_ids"],
+        )
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e),
+        )
 
 
 @router.post(

@@ -7,6 +7,13 @@ class LoginRequest(BaseModel):
     password: str
 
 
+class RegisterRequest(BaseModel):
+    name: str
+    email: str
+    password: str
+    role: Optional[str] = "OPERATOR"
+
+
 class UserInfo(BaseModel):
     id: int
     name: str

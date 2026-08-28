@@ -18,7 +18,7 @@ class Settings(BaseSettings):
 
     JWT_SECRET_KEY: str = "industrial_carbon_intelligence_super_secret_jwt_key_32bytes_long"
     JWT_ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 43200
 
     @field_validator("CORS_ORIGINS", mode="before")
     @classmethod
