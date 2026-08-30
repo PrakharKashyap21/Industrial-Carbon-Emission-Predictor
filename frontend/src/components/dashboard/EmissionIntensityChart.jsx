@@ -1,7 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Scale, Info } from 'lucide-react';
 
 export const EmissionIntensityChart = ({ trends }) => {
+  const [activePointIndex, setActivePointIndex] = useState(null);
+
   if (!trends || !trends.length) return null;
 
   const validIntensities = trends.map((t) => t.co2_intensity).filter((v) => v !== null && v !== undefined);
@@ -27,11 +29,23 @@ export const EmissionIntensityChart = ({ trends }) => {
               const isLeft = idx < 4;
               const isRight = idx > trends.slice(-30).length - 5;
               const tooltipPosClass = isLeft ? 'left-0' : isRight ? 'right-0' : 'left-1/2 -translate-x-1/2';
+              const isActive = activePointIndex === idx;
 
               return (
-                <div key={idx} className="flex-1 flex flex-col items-center group relative h-full justify-end min-w-[10px]">
+                <div
+                  key={idx}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => setActivePointIndex(isActive ? null : idx)}
+                  onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && setActivePointIndex(isActive ? null : idx)}
+                  className="flex-1 flex flex-col items-center group relative h-full justify-end min-w-[10px] cursor-pointer touch-manipulation"
+                >
                   {/* Tooltip */}
-                  <div className={`absolute top-0 ${tooltipPosClass} hidden group-hover:block z-50 bg-slate-900 text-white text-[11px] p-2.5 rounded-xl border border-slate-700 shadow-2xl whitespace-nowrap font-mono pointer-events-none`}>
+                  <div
+                    className={`absolute top-0 ${tooltipPosClass} ${
+                      isActive ? 'block' : 'hidden group-hover:block'
+                    } z-50 bg-slate-900 text-white text-[11px] p-2.5 rounded-xl border border-slate-700 shadow-2xl whitespace-nowrap font-mono pointer-events-none`}
+                  >
                     <span className="font-sans font-bold text-emerald-300 block border-b border-slate-700 pb-1 mb-1">{pt.timestamp}</span>
                     Intensity: <strong className="text-emerald-400 font-bold">{val !== null ? `${val} kg/unit` : 'N/A'}</strong><br />
                     Production: {pt.production_quantity.toLocaleString()} units
@@ -39,7 +53,11 @@ export const EmissionIntensityChart = ({ trends }) => {
 
                   {/* Bar */}
                   <div
-                    className="w-full bg-gradient-to-t from-emerald-700 to-emerald-500 rounded-t group-hover:from-emerald-600 group-hover:to-emerald-400 transition-all shadow-xs"
+                    className={`w-full bg-gradient-to-t ${
+                      isActive
+                        ? 'from-emerald-500 to-emerald-300 ring-2 ring-emerald-400'
+                        : 'from-emerald-700 to-emerald-500 group-hover:from-emerald-600 group-hover:to-emerald-400'
+                    } rounded-t transition-all shadow-xs`}
                     style={{ height: `${height}%` }}
                   />
                 </div>

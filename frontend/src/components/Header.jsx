@@ -70,17 +70,17 @@ export const Header = ({ onSidebarToggle }) => {
     <header className="sticky top-0 z-20 bg-white border-b border-slate-200 shadow-2xs">
       <div className="px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
         {/* Left: Mobile sidebar toggle & Page Title */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5 min-w-0 flex-1">
           <button
             onClick={onSidebarToggle}
-            className="p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors focus:outline-none"
-            title="Toggle Sidebar"
+            className="p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors focus:outline-none shrink-0 cursor-pointer"
+            title="Toggle Navigation"
           >
             <Menu className="w-5 h-5" />
           </button>
 
-          <div>
-            <h1 className="text-base font-bold text-slate-900 tracking-tight flex items-center gap-2">
+          <div className="min-w-0 truncate">
+            <h1 className="text-sm sm:text-base font-bold text-slate-900 tracking-tight truncate sm:whitespace-normal">
               <span>{getPageTitle()}</span>
             </h1>
           </div>
@@ -198,6 +198,28 @@ export const Header = ({ onSidebarToggle }) => {
                 </button>
               </div>
             )}
+          </div>
+        </div>
+      </div>
+
+      {/* Mobile Dedicated Full-Width Plant Selector Bar (< sm BREAKPOINT) */}
+      <div className="block sm:hidden bg-slate-50 border-b border-slate-200 px-4 py-2">
+        <div className="flex items-center justify-between gap-2 bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-800 shadow-2xs font-semibold">
+          <div className="flex items-center gap-2 min-w-0 flex-1">
+            <Factory className="w-4 h-4 text-emerald-600 shrink-0" />
+            <select
+              aria-label="Select Authorized Plant Filter"
+              value={selectedPlantId}
+              onChange={(e) => setSelectedPlantId(e.target.value)}
+              className="w-full bg-transparent border-none text-xs font-semibold text-slate-800 focus:outline-none cursor-pointer py-0.5 min-h-[32px]"
+            >
+              <option value="all">All Authorized Plants</option>
+              {plants.map((p) => (
+                <option key={p.id} value={p.id.toString()}>
+                  {p.plant_name} ({p.plant_code})
+                </option>
+              ))}
+            </select>
           </div>
         </div>
       </div>

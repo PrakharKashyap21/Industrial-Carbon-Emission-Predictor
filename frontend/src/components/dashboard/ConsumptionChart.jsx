@@ -3,6 +3,7 @@ import { Zap, Flame, Wind } from 'lucide-react';
 
 export const ConsumptionChart = ({ trends }) => {
   const [resource, setResource] = useState('electricity');
+  const [activePointIndex, setActivePointIndex] = useState(null);
 
   if (!trends || !trends.length) return null;
 
@@ -28,24 +29,24 @@ export const ConsumptionChart = ({ trends }) => {
         {/* Tab Controls */}
         <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200">
           <button
-            onClick={() => setResource('electricity')}
-            className={`px-2.5 py-1 text-[11px] font-semibold rounded-lg transition-colors ${
+            onClick={() => { setResource('electricity'); setActivePointIndex(null); }}
+            className={`px-2.5 py-1 text-[11px] font-semibold rounded-lg transition-colors cursor-pointer ${
               resource === 'electricity' ? 'bg-white text-amber-800 border border-slate-200 shadow-2xs' : 'text-slate-600 hover:text-slate-900'
             }`}
           >
             Electricity
           </button>
           <button
-            onClick={() => setResource('diesel')}
-            className={`px-2.5 py-1 text-[11px] font-semibold rounded-lg transition-colors ${
+            onClick={() => { setResource('diesel'); setActivePointIndex(null); }}
+            className={`px-2.5 py-1 text-[11px] font-semibold rounded-lg transition-colors cursor-pointer ${
               resource === 'diesel' ? 'bg-white text-amber-800 border border-slate-200 shadow-2xs' : 'text-slate-600 hover:text-slate-900'
             }`}
           >
             Diesel Fuel
           </button>
           <button
-            onClick={() => setResource('gas')}
-            className={`px-2.5 py-1 text-[11px] font-semibold rounded-lg transition-colors ${
+            onClick={() => { setResource('gas'); setActivePointIndex(null); }}
+            className={`px-2.5 py-1 text-[11px] font-semibold rounded-lg transition-colors cursor-pointer ${
               resource === 'gas' ? 'bg-white text-blue-800 border border-slate-200 shadow-2xs' : 'text-slate-600 hover:text-slate-900'
             }`}
           >
@@ -64,18 +65,32 @@ export const ConsumptionChart = ({ trends }) => {
               const isLeft = idx < 4;
               const isRight = idx > trends.slice(-30).length - 5;
               const tooltipPosClass = isLeft ? 'left-0' : isRight ? 'right-0' : 'left-1/2 -translate-x-1/2';
+              const isActive = activePointIndex === idx;
 
               return (
-                <div key={idx} className="flex-1 flex flex-col items-center group relative h-full justify-end min-w-[10px]">
+                <div
+                  key={idx}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => setActivePointIndex(isActive ? null : idx)}
+                  onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && setActivePointIndex(isActive ? null : idx)}
+                  className="flex-1 flex flex-col items-center group relative h-full justify-end min-w-[10px] cursor-pointer touch-manipulation"
+                >
                   {/* Tooltip */}
-                  <div className={`absolute top-0 ${tooltipPosClass} hidden group-hover:block z-50 bg-slate-900 text-white text-[11px] p-2.5 rounded-xl border border-slate-700 shadow-2xl whitespace-nowrap font-mono pointer-events-none`}>
+                  <div
+                    className={`absolute top-0 ${tooltipPosClass} ${
+                      isActive ? 'block' : 'hidden group-hover:block'
+                    } z-50 bg-slate-900 text-white text-[11px] p-2.5 rounded-xl border border-slate-700 shadow-2xl whitespace-nowrap font-mono pointer-events-none`}
+                  >
                     <span className="font-sans font-bold text-amber-300 block border-b border-slate-700 pb-1 mb-1">{pt.timestamp}</span>
                     {currentRes.label}: <strong className="text-amber-400 font-bold">{val.toLocaleString()} {currentRes.unit}</strong>
                   </div>
 
                   {/* Bar */}
                   <div
-                    className={`w-full bg-gradient-to-t ${currentRes.color} rounded-t transition-all shadow-xs`}
+                    className={`w-full bg-gradient-to-t ${currentRes.color} rounded-t transition-all shadow-xs ${
+                      isActive ? 'ring-2 ring-amber-400' : ''
+                    }`}
                     style={{ height: `${height}%` }}
                   />
                 </div>

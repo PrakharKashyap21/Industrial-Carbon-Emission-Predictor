@@ -207,14 +207,112 @@ export const KPIGrid = ({ kpis }) => {
   const activeSummary = selectedKpiKey ? summaryDetails[selectedKpiKey] : null;
   const ActiveIcon = activeSummary ? activeSummary.icon : null;
 
+  const renderSummaryCardContent = () => {
+    if (!activeSummary || !ActiveIcon) return null;
+    return (
+      <>
+        <button
+          onClick={() => setSelectedKpiKey(null)}
+          aria-label="Close summary card"
+          className="absolute top-3 right-3 sm:top-4 sm:right-4 p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 transition-colors cursor-pointer"
+        >
+          <X className="w-4 h-4" />
+        </button>
+
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 pb-3 pr-8">
+          <div className="flex items-center space-x-3">
+            <div className={`p-2.5 rounded-xl ${activeSummary.bgColor} ${activeSummary.color} border ${activeSummary.borderColor} shrink-0`}>
+              <ActiveIcon className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex flex-wrap items-center gap-1.5">
+                <h4 className="text-base font-extrabold text-slate-900">{activeSummary.title}</h4>
+                <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200">
+                  {activeSummary.badge}
+                </span>
+              </div>
+              <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">{activeSummary.overview}</p>
+            </div>
+          </div>
+
+          <div className="text-left sm:text-right shrink-0">
+            <span className="text-2xl font-black text-slate-900 font-mono block">{activeSummary.value}</span>
+            <span className={`text-[10px] font-semibold px-2 py-0.5 rounded border inline-block mt-0.5 ${activeSummary.statusColor}`}>
+              {activeSummary.status}
+            </span>
+          </div>
+        </div>
+
+        {/* Detailed Content Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
+          {/* Takeaways */}
+          <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2">
+            <h5 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center">
+              <Sparkles className="w-3.5 h-3.5 mr-1.5 text-cyan-600" /> Key Insights & Benchmark
+            </h5>
+            <ul className="space-y-1.5 text-xs text-slate-700">
+              {activeSummary.takeaways.map((point, idx) => (
+                <li key={idx} className="flex items-start space-x-1.5">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
+                  <span>{point}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Actions & Next Steps */}
+          <div className="bg-cyan-50/50 p-4 rounded-xl border border-cyan-200 space-y-2 flex flex-col justify-between">
+            <div>
+              <h5 className="text-xs font-bold text-cyan-900 uppercase tracking-wider flex items-center">
+                <AlertCircle className="w-3.5 h-3.5 mr-1.5 text-cyan-600" /> Recommended Action Items
+              </h5>
+              <ul className="space-y-1.5 text-xs text-slate-700 mt-2">
+                {activeSummary.actions.map((act, idx) => (
+                  <li key={idx} className="flex items-start space-x-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-cyan-600 shrink-0 mt-1.5"></span>
+                    <span>{act}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div className="pt-3 border-t border-cyan-200/60 mt-2">
+              <Link
+                to={activeSummary.link}
+                className="text-xs font-bold text-cyan-700 hover:text-cyan-900 flex items-center space-x-1 hover:underline font-sans min-h-[36px]"
+              >
+                <span>{activeSummary.linkText}</span>
+              </Link>
+            </div>
+          </div>
+        </div>
+      </>
+    );
+  };
+
+  const renderMobileInlineSummary = (key, colSpanClass = 'col-span-full') => {
+    if (selectedKpiKey !== key) return null;
+    return (
+      <div className={`block sm:hidden ${colSpanClass} my-1 animate-in fade-in slide-in-from-top-2 duration-300`}>
+        <div className="bg-white border-2 border-cyan-500/30 rounded-2xl p-4 shadow-lg space-y-4 relative">
+          {renderSummaryCardContent()}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-4">
       {/* 4 Primary Top KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Actual CO2 Emission */}
         <div
+          role="button"
+          tabIndex={0}
           onClick={() => handleCardClick('actual_co2')}
-          className={`bg-white border rounded-2xl p-5 shadow-xs relative overflow-hidden space-y-2 cursor-pointer transition-all hover:border-cyan-400 hover:shadow-md active:scale-[0.99] ${
+          onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && handleCardClick('actual_co2')}
+          className={`bg-white border rounded-2xl p-5 shadow-xs relative overflow-hidden space-y-2 cursor-pointer transition-all hover:border-cyan-400 hover:shadow-md active:scale-[0.99] touch-manipulation ${
             selectedKpiKey === 'actual_co2' ? 'border-cyan-500 ring-2 ring-cyan-500/20 bg-cyan-50/30' : 'border-slate-200'
           }`}
         >
@@ -228,17 +326,23 @@ export const KPIGrid = ({ kpis }) => {
             <span className="text-2xl font-extrabold text-slate-900 font-mono">
               {kpis.latest_actual_co2_kg?.toLocaleString()} <span className="text-xs font-normal text-slate-500">kg</span>
             </span>
-            <span className="text-[10px] text-slate-500 block mt-0.5 flex items-center justify-between">
+            <div className="text-[10px] text-slate-500 mt-1 flex flex-wrap items-center justify-between gap-1">
               <span>Period Avg: {kpis.period_avg_actual_co2_kg?.toLocaleString()} kg</span>
-              <span className="text-cyan-600 font-medium hover:underline">Click for Summary →</span>
-            </span>
+              <span className="text-cyan-700 font-bold bg-cyan-50 px-2 py-0.5 rounded border border-cyan-200 text-[10px] hover:bg-cyan-100">
+                View Summary →
+              </span>
+            </div>
           </div>
         </div>
+        {renderMobileInlineSummary('actual_co2')}
 
         {/* Predicted CO2 Emission */}
         <div
+          role="button"
+          tabIndex={0}
           onClick={() => handleCardClick('predicted_co2')}
-          className={`bg-white border rounded-2xl p-5 shadow-xs relative overflow-hidden space-y-2 cursor-pointer transition-all hover:border-cyan-400 hover:shadow-md active:scale-[0.99] ${
+          onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && handleCardClick('predicted_co2')}
+          className={`bg-white border rounded-2xl p-5 shadow-xs relative overflow-hidden space-y-2 cursor-pointer transition-all hover:border-cyan-400 hover:shadow-md active:scale-[0.99] touch-manipulation ${
             selectedKpiKey === 'predicted_co2' ? 'border-cyan-500 ring-2 ring-cyan-500/20 bg-cyan-50/30' : 'border-slate-200'
           }`}
         >
@@ -254,17 +358,23 @@ export const KPIGrid = ({ kpis }) => {
             <span className="text-2xl font-extrabold text-cyan-700 font-mono">
               {kpis.latest_predicted_co2_kg?.toLocaleString()} <span className="text-xs font-normal text-slate-500">kg</span>
             </span>
-            <span className="text-[10px] text-slate-500 block mt-0.5 flex items-center justify-between">
+            <div className="text-[10px] text-slate-500 mt-1 flex flex-wrap items-center justify-between gap-1">
               <span>AI Weighted Ensemble</span>
-              <span className="text-cyan-600 font-medium hover:underline">Click for Summary →</span>
-            </span>
+              <span className="text-cyan-700 font-bold bg-cyan-50 px-2 py-0.5 rounded border border-cyan-200 text-[10px] hover:bg-cyan-100">
+                View Summary →
+              </span>
+            </div>
           </div>
         </div>
+        {renderMobileInlineSummary('predicted_co2')}
 
         {/* CO2 Intensity */}
         <div
+          role="button"
+          tabIndex={0}
           onClick={() => handleCardClick('intensity')}
-          className={`bg-white border rounded-2xl p-5 shadow-xs relative overflow-hidden space-y-2 cursor-pointer transition-all hover:border-emerald-400 hover:shadow-md active:scale-[0.99] ${
+          onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && handleCardClick('intensity')}
+          className={`bg-white border rounded-2xl p-5 shadow-xs relative overflow-hidden space-y-2 cursor-pointer transition-all hover:border-emerald-400 hover:shadow-md active:scale-[0.99] touch-manipulation ${
             selectedKpiKey === 'intensity' ? 'border-emerald-500 ring-2 ring-emerald-500/20 bg-emerald-50/30' : 'border-slate-200'
           }`}
         >
@@ -279,17 +389,23 @@ export const KPIGrid = ({ kpis }) => {
               {kpis.co2_intensity !== null ? `${kpis.co2_intensity}` : 'N/A'}{' '}
               <span className="text-xs font-normal text-slate-500">kg/unit</span>
             </span>
-            <span className="text-[10px] text-slate-500 block mt-0.5 flex items-center justify-between">
+            <div className="text-[10px] text-slate-500 mt-1 flex flex-wrap items-center justify-between gap-1">
               <span>Emission per unit</span>
-              <span className="text-emerald-600 font-medium hover:underline">Click for Summary →</span>
-            </span>
+              <span className="text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 text-[10px] hover:bg-emerald-100">
+                View Summary →
+              </span>
+            </div>
           </div>
         </div>
+        {renderMobileInlineSummary('intensity')}
 
         {/* Production Output */}
         <div
+          role="button"
+          tabIndex={0}
           onClick={() => handleCardClick('production')}
-          className={`bg-white border rounded-2xl p-5 shadow-xs relative overflow-hidden space-y-2 cursor-pointer transition-all hover:border-blue-400 hover:shadow-md active:scale-[0.99] ${
+          onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && handleCardClick('production')}
+          className={`bg-white border rounded-2xl p-5 shadow-xs relative overflow-hidden space-y-2 cursor-pointer transition-all hover:border-blue-400 hover:shadow-md active:scale-[0.99] touch-manipulation ${
             selectedKpiKey === 'production' ? 'border-blue-500 ring-2 ring-blue-500/20 bg-blue-50/30' : 'border-slate-200'
           }`}
         >
@@ -304,19 +420,25 @@ export const KPIGrid = ({ kpis }) => {
               {kpis.period_total_production?.toLocaleString()}{' '}
               <span className="text-xs font-normal text-slate-500">units</span>
             </span>
-            <span className="text-[10px] text-slate-500 block mt-0.5 flex items-center justify-between">
+            <div className="text-[10px] text-slate-500 mt-1 flex flex-wrap items-center justify-between gap-1">
               <span>Daily Avg: {kpis.period_avg_production?.toLocaleString()}</span>
-              <span className="text-blue-600 font-medium hover:underline">Click for Summary →</span>
-            </span>
+              <span className="text-blue-700 font-bold bg-blue-50 px-2 py-0.5 rounded border border-blue-200 text-[10px] hover:bg-blue-100">
+                View Summary →
+              </span>
+            </div>
           </div>
         </div>
+        {renderMobileInlineSummary('production')}
       </div>
 
       {/* 4 Secondary Resource Consumption KPIs */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <div
+          role="button"
+          tabIndex={0}
           onClick={() => handleCardClick('electricity')}
-          className={`p-3.5 rounded-xl border flex items-center space-x-3 cursor-pointer transition-all hover:border-amber-400 hover:bg-amber-50/40 active:scale-[0.99] ${
+          onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && handleCardClick('electricity')}
+          className={`p-3.5 rounded-xl border flex items-center space-x-2.5 cursor-pointer transition-all hover:border-amber-400 hover:bg-amber-50/40 active:scale-[0.99] touch-manipulation ${
             selectedKpiKey === 'electricity' ? 'border-amber-500 ring-2 ring-amber-500/20 bg-amber-50/50' : 'bg-slate-50 border-slate-200'
           }`}
         >
@@ -330,10 +452,14 @@ export const KPIGrid = ({ kpis }) => {
             </span>
           </div>
         </div>
+        {renderMobileInlineSummary('electricity', 'col-span-2')}
 
         <div
+          role="button"
+          tabIndex={0}
           onClick={() => handleCardClick('diesel')}
-          className={`p-3.5 rounded-xl border flex items-center space-x-3 cursor-pointer transition-all hover:border-amber-400 hover:bg-amber-50/40 active:scale-[0.99] ${
+          onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && handleCardClick('diesel')}
+          className={`p-3.5 rounded-xl border flex items-center space-x-2.5 cursor-pointer transition-all hover:border-amber-400 hover:bg-amber-50/40 active:scale-[0.99] touch-manipulation ${
             selectedKpiKey === 'diesel' ? 'border-amber-500 ring-2 ring-amber-500/20 bg-amber-50/50' : 'bg-slate-50 border-slate-200'
           }`}
         >
@@ -347,10 +473,14 @@ export const KPIGrid = ({ kpis }) => {
             </span>
           </div>
         </div>
+        {renderMobileInlineSummary('diesel', 'col-span-2')}
 
         <div
+          role="button"
+          tabIndex={0}
           onClick={() => handleCardClick('gas')}
-          className={`p-3.5 rounded-xl border flex items-center space-x-3 cursor-pointer transition-all hover:border-blue-400 hover:bg-blue-50/40 active:scale-[0.99] ${
+          onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && handleCardClick('gas')}
+          className={`p-3.5 rounded-xl border flex items-center space-x-2.5 cursor-pointer transition-all hover:border-blue-400 hover:bg-blue-50/40 active:scale-[0.99] touch-manipulation ${
             selectedKpiKey === 'gas' ? 'border-blue-500 ring-2 ring-blue-500/20 bg-blue-50/50' : 'bg-slate-50 border-slate-200'
           }`}
         >
@@ -364,10 +494,14 @@ export const KPIGrid = ({ kpis }) => {
             </span>
           </div>
         </div>
+        {renderMobileInlineSummary('gas', 'col-span-2')}
 
         <div
+          role="button"
+          tabIndex={0}
           onClick={() => handleCardClick('runtime')}
-          className={`p-3.5 rounded-xl border flex items-center space-x-3 cursor-pointer transition-all hover:border-yellow-400 hover:bg-yellow-50/40 active:scale-[0.99] ${
+          onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && handleCardClick('runtime')}
+          className={`p-3.5 rounded-xl border flex items-center space-x-2.5 cursor-pointer transition-all hover:border-yellow-400 hover:bg-yellow-50/40 active:scale-[0.99] touch-manipulation ${
             selectedKpiKey === 'runtime' ? 'border-yellow-500 ring-2 ring-yellow-500/20 bg-yellow-50/50' : 'bg-slate-50 border-slate-200'
           }`}
         >
@@ -382,87 +516,13 @@ export const KPIGrid = ({ kpis }) => {
             </span>
           </div>
         </div>
+        {renderMobileInlineSummary('runtime', 'col-span-2')}
       </div>
 
-      {/* Expanded Interactive KPI Summary Card Drawer */}
+      {/* Desktop KPI Summary Card Drawer (Hidden on Mobile) */}
       {activeSummary && (
-        <div className="bg-white border-2 border-cyan-500/30 rounded-2xl p-6 shadow-lg space-y-4 animate-in fade-in slide-in-from-top-2 duration-300 relative">
-          <button
-            onClick={() => setSelectedKpiKey(null)}
-            className="absolute top-4 right-4 p-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-900 transition-colors"
-            title="Close summary"
-          >
-            <X className="w-4 h-4" />
-          </button>
-
-          {/* Header */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 pb-3 pr-8">
-            <div className="flex items-center space-x-3">
-              <div className={`p-2.5 rounded-xl ${activeSummary.bgColor} ${activeSummary.color} border ${activeSummary.borderColor}`}>
-                <ActiveIcon className="w-5 h-5" />
-              </div>
-              <div>
-                <div className="flex items-center space-x-2">
-                  <h4 className="text-base font-extrabold text-slate-900">{activeSummary.title}</h4>
-                  <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200">
-                    {activeSummary.badge}
-                  </span>
-                </div>
-                <p className="text-xs text-slate-500 mt-0.5">{activeSummary.overview}</p>
-              </div>
-            </div>
-
-            <div className="text-left sm:text-right shrink-0">
-              <span className="text-2xl font-black text-slate-900 font-mono block">{activeSummary.value}</span>
-              <span className={`text-[10px] font-semibold px-2 py-0.5 rounded border inline-block mt-0.5 ${activeSummary.statusColor}`}>
-                {activeSummary.status}
-              </span>
-            </div>
-          </div>
-
-          {/* Detailed Content Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
-            {/* Takeaways */}
-            <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2">
-              <h5 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center">
-                <Sparkles className="w-3.5 h-3.5 mr-1.5 text-cyan-600" /> Key Insights & Benchmark
-              </h5>
-              <ul className="space-y-1.5 text-xs text-slate-700">
-                {activeSummary.takeaways.map((point, idx) => (
-                  <li key={idx} className="flex items-start space-x-1.5">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
-                    <span>{point}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            {/* Actions & Next Steps */}
-            <div className="bg-cyan-50/50 p-4 rounded-xl border border-cyan-200 space-y-2 flex flex-col justify-between">
-              <div>
-                <h5 className="text-xs font-bold text-cyan-900 uppercase tracking-wider flex items-center">
-                  <AlertCircle className="w-3.5 h-3.5 mr-1.5 text-cyan-600" /> Recommended Action Items
-                </h5>
-                <ul className="space-y-1.5 text-xs text-slate-700 mt-2">
-                  {activeSummary.actions.map((act, idx) => (
-                    <li key={idx} className="flex items-start space-x-1.5">
-                      <span className="w-1.5 h-1.5 rounded-full bg-cyan-600 shrink-0 mt-1.5"></span>
-                      <span>{act}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              <div className="pt-3 border-t border-cyan-200/60 mt-2">
-                <Link
-                  to={activeSummary.link}
-                  className="text-xs font-bold text-cyan-700 hover:text-cyan-900 flex items-center space-x-1 hover:underline font-sans"
-                >
-                  <span>{activeSummary.linkText}</span>
-                </Link>
-              </div>
-            </div>
-          </div>
+        <div className="hidden sm:block bg-white border-2 border-cyan-500/30 rounded-2xl p-6 shadow-lg space-y-4 animate-in fade-in slide-in-from-top-2 duration-300 relative">
+          {renderSummaryCardContent()}
         </div>
       )}
     </div>

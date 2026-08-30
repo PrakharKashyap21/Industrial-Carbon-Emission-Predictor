@@ -26,24 +26,24 @@ export const CandidateTable = ({ candidates }) => {
         </div>
 
         {/* Filter Buttons */}
-        <div className="flex items-center space-x-1 bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs font-semibold">
+        <div className="flex flex-wrap items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs font-semibold">
           <button
             onClick={() => setFilter('feasible')}
-            className={`px-3 py-1 rounded-lg transition-colors ${filter === 'feasible' ? 'bg-white text-cyan-700 border border-slate-200 shadow-2xs' : 'text-slate-600 hover:text-slate-900'}`}
+            className={`px-3 py-1 rounded-lg transition-colors cursor-pointer ${filter === 'feasible' ? 'bg-white text-cyan-700 border border-slate-200 shadow-2xs' : 'text-slate-600 hover:text-slate-900'}`}
           >
             Feasible Only
           </button>
           <button
             onClick={() => setFilter('rejected')}
-            className={`px-3 py-1 rounded-lg transition-colors ${filter === 'rejected' ? 'bg-white text-cyan-700 border border-slate-200 shadow-2xs' : 'text-slate-600 hover:text-slate-900'}`}
+            className={`px-3 py-1 rounded-lg transition-colors cursor-pointer ${filter === 'rejected' ? 'bg-white text-cyan-700 border border-slate-200 shadow-2xs' : 'text-slate-600 hover:text-slate-900'}`}
           >
             Rejected Only
           </button>
           <button
             onClick={() => setFilter('all')}
-            className={`px-3 py-1 rounded-lg transition-colors ${filter === 'all' ? 'bg-white text-cyan-700 border border-slate-200 shadow-2xs' : 'text-slate-600 hover:text-slate-900'}`}
+            className={`px-3 py-1 rounded-lg transition-colors cursor-pointer ${filter === 'all' ? 'bg-white text-cyan-700 border border-slate-200 shadow-2xs' : 'text-slate-600 hover:text-slate-900'}`}
           >
-            All Candidates ({candidates.length})
+            All ({candidates.length})
           </button>
         </div>
       </div>

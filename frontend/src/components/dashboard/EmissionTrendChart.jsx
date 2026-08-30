@@ -1,7 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Activity } from 'lucide-react';
 
 export const EmissionTrendChart = ({ trends }) => {
+  const [activePointIndex, setActivePointIndex] = useState(null);
+
   if (!trends || !trends.length) {
     return (
       <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs text-center text-slate-500 text-xs">
@@ -41,11 +43,23 @@ export const EmissionTrendChart = ({ trends }) => {
               const isLeft = idx < 4;
               const isRight = idx > trends.slice(-30).length - 5;
               const tooltipPosClass = isLeft ? 'left-0' : isRight ? 'right-0' : 'left-1/2 -translate-x-1/2';
+              const isActive = activePointIndex === idx;
 
               return (
-                <div key={idx} className="flex-1 flex flex-col items-center group relative h-full justify-end min-w-[10px]">
+                <div
+                  key={idx}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => setActivePointIndex(isActive ? null : idx)}
+                  onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && setActivePointIndex(isActive ? null : idx)}
+                  className="flex-1 flex flex-col items-center group relative h-full justify-end min-w-[10px] cursor-pointer touch-manipulation"
+                >
                   {/* Non-overlapping High Contrast Tooltip */}
-                  <div className={`absolute top-0 ${tooltipPosClass} hidden group-hover:block z-50 bg-slate-900 text-white text-[11px] p-2.5 rounded-xl border border-slate-700 shadow-2xl whitespace-nowrap font-mono pointer-events-none`}>
+                  <div
+                    className={`absolute top-0 ${tooltipPosClass} ${
+                      isActive ? 'block' : 'hidden group-hover:block'
+                    } z-50 bg-slate-900 text-white text-[11px] p-2.5 rounded-xl border border-slate-700 shadow-2xl whitespace-nowrap font-mono pointer-events-none`}
+                  >
                     <span className="font-sans font-bold text-cyan-300 block border-b border-slate-700 pb-1 mb-1">{pt.timestamp}</span>
                     Actual CO₂: <strong className="text-cyan-400 font-bold">{pt.actual_co2_kg.toLocaleString()} kg</strong><br />
                     7d Moving Avg: <strong className="text-emerald-400 font-bold">{pt.moving_avg_7d_co2_kg?.toLocaleString()} kg</strong>
@@ -59,7 +73,11 @@ export const EmissionTrendChart = ({ trends }) => {
 
                   {/* Bar */}
                   <div
-                    className="w-full bg-gradient-to-t from-cyan-700 to-cyan-500 rounded-t group-hover:from-cyan-600 group-hover:to-cyan-400 transition-all shadow-xs"
+                    className={`w-full bg-gradient-to-t ${
+                      isActive
+                        ? 'from-cyan-500 to-cyan-300 ring-2 ring-cyan-400'
+                        : 'from-cyan-700 to-cyan-500 group-hover:from-cyan-600 group-hover:to-cyan-400'
+                    } rounded-t transition-all shadow-xs`}
                     style={{ height: `${actHeight}%` }}
                   />
                 </div>

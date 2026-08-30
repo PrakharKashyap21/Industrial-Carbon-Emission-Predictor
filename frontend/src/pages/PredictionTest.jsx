@@ -257,8 +257,8 @@ export const PredictionTest = () => {
                   </div>
                 )}
 
-                <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
-                  <div className="text-xs text-slate-500">
+                <div className="pt-4 border-t border-slate-100 flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-3">
+                  <div className="text-xs text-slate-500 text-center sm:text-left">
                     Tab {activeTab === 'energy' ? '1/3' : activeTab === 'production' ? '2/3' : '3/3'}
                   </div>
                   <Button

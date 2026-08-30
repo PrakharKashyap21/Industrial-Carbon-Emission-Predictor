@@ -131,22 +131,22 @@ export const ReportPreviewModal = ({ isOpen, onClose, reportData, generatedRepor
         </div>
 
         {/* Modal Body / EXACT PDF PAPER SHEET REPLICA */}
-        <div className="p-6 overflow-y-auto space-y-6 flex-1 bg-slate-200/60">
+        <div className="p-3 sm:p-6 overflow-y-auto space-y-6 flex-1 bg-slate-200/60">
           
-          <div className="bg-white text-slate-900 p-8 border border-slate-300 shadow-xl rounded-xl max-w-3xl mx-auto space-y-6 font-sans">
+          <div className="bg-white text-slate-900 p-4 sm:p-8 border border-slate-300 shadow-xl rounded-xl max-w-3xl mx-auto space-y-6 font-sans">
             
             {/* PDF Header Block */}
             <div>
               <span className="text-[9.5px] font-extrabold uppercase tracking-widest text-slate-500 block mb-1">
                 INDUSTRIAL CARBON INTELLIGENCE SYSTEM
               </span>
-              <h1 className="text-xl font-extrabold text-slate-900 tracking-tight leading-tight">
+              <h1 className="text-lg sm:text-xl font-extrabold text-slate-900 tracking-tight leading-tight">
                 {getPdfTitle()}
               </h1>
               <div className="h-0.5 bg-cyan-600 w-full mt-2 mb-4"></div>
 
               {/* PDF Metadata Grid */}
-              <div className="bg-slate-50 border border-slate-300 rounded-lg p-3 grid grid-cols-2 gap-2 text-xs font-mono text-slate-700">
+              <div className="bg-slate-50 border border-slate-300 rounded-lg p-3 grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs font-mono text-slate-700">
                 <div><span className="font-bold text-slate-900 font-sans">Facility:</span> {reportData?.plant_name || 'Apex Steel Works'} ({reportData?.plant_code || 'P001'})</div>
                 <div><span className="font-bold text-slate-900 font-sans">Period:</span> {reportData?.period_start || '2026-08-01'} to {reportData?.period_end || '2026-08-31'}</div>
                 <div><span className="font-bold text-slate-900 font-sans">Generated:</span> {reportData?.generated_at || '2026-08-28 18:00:00 UTC'}</div>

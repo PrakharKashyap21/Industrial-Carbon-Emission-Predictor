@@ -1,7 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Cpu, CheckCircle2 } from 'lucide-react';
 
 export const PredictionVsActualChart = ({ trends }) => {
+  const [activePointIndex, setActivePointIndex] = useState(null);
+
   if (!trends || !trends.length) return null;
 
   const maxVal = Math.max(...trends.map((t) => Math.max(t.actual_co2_kg, t.predicted_co2_kg)), 1);
@@ -33,11 +35,23 @@ export const PredictionVsActualChart = ({ trends }) => {
               const isLeft = idx < 4;
               const isRight = idx > trends.slice(-30).length - 5;
               const tooltipPosClass = isLeft ? 'left-0' : isRight ? 'right-0' : 'left-1/2 -translate-x-1/2';
+              const isActive = activePointIndex === idx;
 
               return (
-                <div key={idx} className="flex-1 flex items-end justify-center space-x-0.5 group relative h-full min-w-[10px]">
+                <div
+                  key={idx}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => setActivePointIndex(isActive ? null : idx)}
+                  onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && setActivePointIndex(isActive ? null : idx)}
+                  className="flex-1 flex items-end justify-center space-x-0.5 group relative h-full min-w-[10px] cursor-pointer touch-manipulation"
+                >
                   {/* Tooltip */}
-                  <div className={`absolute top-0 ${tooltipPosClass} hidden group-hover:block z-50 bg-slate-900 text-white text-[11px] p-2.5 rounded-xl border border-slate-700 shadow-2xl whitespace-nowrap font-mono pointer-events-none`}>
+                  <div
+                    className={`absolute top-0 ${tooltipPosClass} ${
+                      isActive ? 'block' : 'hidden group-hover:block'
+                    } z-50 bg-slate-900 text-white text-[11px] p-2.5 rounded-xl border border-slate-700 shadow-2xl whitespace-nowrap font-mono pointer-events-none`}
+                  >
                     <span className="font-sans font-bold text-cyan-300 block border-b border-slate-700 pb-1 mb-1">{pt.timestamp}</span>
                     Actual: <strong className="text-slate-200">{pt.actual_co2_kg.toLocaleString()} kg</strong><br />
                     Predicted: <strong className="text-cyan-300">{pt.predicted_co2_kg.toLocaleString()} kg</strong><br />
@@ -46,13 +60,17 @@ export const PredictionVsActualChart = ({ trends }) => {
 
                   {/* Actual Bar */}
                   <div
-                    className="w-1/2 bg-slate-400 rounded-t group-hover:bg-slate-500 transition-all shadow-xs"
+                    className={`w-1/2 bg-slate-400 rounded-t ${
+                      isActive ? 'bg-slate-600 ring-1 ring-slate-300' : 'group-hover:bg-slate-500'
+                    } transition-all shadow-xs`}
                     style={{ height: `${actHeight}%` }}
                   />
 
                   {/* Predicted Bar */}
                   <div
-                    className="w-1/2 bg-cyan-600 rounded-t group-hover:bg-cyan-500 transition-all shadow-xs"
+                    className={`w-1/2 bg-cyan-600 rounded-t ${
+                      isActive ? 'bg-cyan-400 ring-1 ring-cyan-200' : 'group-hover:bg-cyan-500'
+                    } transition-all shadow-xs`}
                     style={{ height: `${predHeight}%` }}
                   />
                 </div>
