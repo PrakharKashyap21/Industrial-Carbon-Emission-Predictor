@@ -11,6 +11,7 @@ from app.schemas.analytics import (
     AnomalyAnalyticsResponse,
     OptimizationImpactResponse,
     IndustrialInsightItem,
+    PlantComparisonResponse,
 )
 from app.analytics.analytics_service import analytics_service
 
@@ -167,4 +168,25 @@ def get_insights(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Industrial Insights Error: {str(e)}"
+        )
+
+
+@router.get(
+    "/plant-comparison",
+    response_model=PlantComparisonResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Get Multi-Plant Comparison & Ranking",
+    description="Fetch comparative metrics and ranking across all authorized plants."
+)
+def get_plant_comparison(
+    days: int = Query(30, description="Date window filter in days"),
+    db: Session = Depends(get_db)
+) -> PlantComparisonResponse:
+    """Fetch plant comparison."""
+    try:
+        return PlantComparisonResponse(**analytics_service.get_plant_comparison(db=db, days=days))
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Plant Comparison Error: {str(e)}"
         )

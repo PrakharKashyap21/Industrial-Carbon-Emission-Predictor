@@ -198,11 +198,11 @@ export const ModelInsights = () => {
     <div className="space-y-6">
       {/* Page Header */}
       <PageHeader
-        title="Phase 4 — ML Model Registry & Performance Architecture"
+        title="ML Model Registry & Performance Metrics"
         subtitle="Manage active production models, tune ensemble weighting parameters, inspect sub-model hyperparameters, and evaluate out-of-sample residual errors."
         badge={
           <Badge variant="info" dot>
-            Phase 4 Architecture
+            Production ML Architecture
           </Badge>
         }
       >

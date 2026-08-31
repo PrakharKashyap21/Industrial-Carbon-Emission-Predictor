@@ -3,6 +3,9 @@ import os
 from typing import Dict, Any
 
 
+from app.reports.report_builder import normalize_report_type
+
+
 class CSVReportGenerator:
     """CSV Report Exporter generating clean comma-separated tabular data files."""
 
@@ -10,7 +13,7 @@ class CSVReportGenerator:
         """Generate CSV report and save to output_path."""
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
 
-        r_type = report_data.get("report_type", "ANALYTICS")
+        r_type = normalize_report_type(report_data.get("report_type"))
 
         with open(output_path, mode="w", newline="", encoding="utf-8") as f:
             writer = csv.writer(f)

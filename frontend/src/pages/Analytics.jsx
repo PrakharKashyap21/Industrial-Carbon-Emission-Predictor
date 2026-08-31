@@ -9,6 +9,7 @@ import {
   getAnomalies,
   getOptimizationImpact,
   getInsights,
+  getPlantComparison,
 } from '../services/analyticsApi';
 import { useFilter } from '../context/FilterContext';
 
@@ -28,6 +29,7 @@ import AnomalyTimeline from '../components/analytics/AnomalyTimeline';
 import ModelInsightsWidget from '../components/analytics/ModelInsights';
 import OptimizationImpact from '../components/analytics/OptimizationImpact';
 import IndustrialInsights from '../components/analytics/IndustrialInsights';
+import PlantComparison from '../components/analytics/PlantComparison';
 
 export const Analytics = () => {
   const { selectedPlantId, dateRange } = useFilter();
@@ -45,12 +47,15 @@ export const Analytics = () => {
   const [anomalyData, setAnomalyData] = useState(null);
   const [optimizationData, setOptimizationData] = useState(null);
   const [insights, setInsights] = useState([]);
+  const [plantComparison, setPlantComparison] = useState(null);
 
   const getDaysFromFilter = (range) => {
     switch (range) {
       case 'today': return 1;
       case '7d': return 7;
       case '30d': return 30;
+      case '90d': return 90;
+      case '365d': return 365;
       case 'this_month': return 30;
       case 'last_month': return 60;
       default: return 30;
@@ -74,6 +79,7 @@ export const Analytics = () => {
       anRes,
       optRes,
       insRes,
+      plRes,
     ] = await Promise.all([
       getOverview(params),
       getEmissionTrend(params),
@@ -82,6 +88,7 @@ export const Analytics = () => {
       getAnomalies(params),
       getOptimizationImpact({ plant_id: plantIdParam }),
       getInsights(params),
+      getPlantComparison({ days }),
     ]);
 
     setLoading(false);
@@ -95,6 +102,7 @@ export const Analytics = () => {
     if (anRes.success) setAnomalyData(anRes.data);
     if (optRes.success) setOptimizationData(optRes.data);
     if (insRes.success) setInsights(insRes.data);
+    if (plRes.success) setPlantComparison(plRes.data);
   };
 
   useEffect(() => {
@@ -158,6 +166,7 @@ export const Analytics = () => {
           {activeTab === 'overview' && (
             <div className="space-y-6">
               <KPIOverview overview={overview} />
+              <PlantComparison plantData={plantComparison} />
               <IndustrialInsights insights={insights} />
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <EmissionTrend trendData={trendData} />

@@ -31,6 +31,32 @@ class RecommendationEngine:
         except Exception:
             shap_explanation = None
 
+        rf_pred = top_candidate.get("rf_prediction", 0.0)
+        xgb_pred = top_candidate.get("xgb_prediction", 0.0)
+
+        # Build natural-language change summary list
+        change_summary = []
+        elec_chg = changes.get("electricity_change", 0.0)
+        fuel_chg = changes.get("fuel_change", 0.0)
+        runtime_chg = changes.get("runtime_change", 0.0)
+
+        if elec_chg < 0:
+            change_summary.append(f"Reduce electricity consumption by {abs(elec_chg)}%")
+        else:
+            change_summary.append("Maintain electricity consumption")
+
+        if fuel_chg < 0:
+            change_summary.append(f"Reduce fuel & natural gas consumption by {abs(fuel_chg)}%")
+        else:
+            change_summary.append("Maintain fuel consumption")
+
+        if runtime_chg < 0:
+            change_summary.append(f"Reduce machine runtime by {abs(runtime_chg)}%")
+        else:
+            change_summary.append("Maintain machine runtime")
+
+        change_summary.append("Maintain production output (production constraint preserved)")
+
         # Build decision justification bullets using decision-support terminology
         reasons = []
 
@@ -38,10 +64,10 @@ class RecommendationEngine:
             abs_saving = abs(co2_change)
             abs_pct = abs(co2_change_pct)
             reasons.append(
-                f"The model identifies this configuration as the lowest-emission feasible candidate (estimated saving of {abs_saving} kg CO₂ / {abs_pct}%)."
+                f"Model identifies this configuration as the lowest-emission feasible candidate (estimated saving of {abs_saving} kg CO₂ / {abs_pct}%)."
             )
         else:
-            reasons.append("Current baseline operating conditions remain recommended as alternative configurations increase emissions.")
+            reasons.append("Current operating conditions remain recommended as alternative search candidates do not yield further savings.")
 
         reasons.append("All hard operational feasibility constraints (minimum production output) are fully satisfied.")
         reasons.append(f"Model prediction reliability is assessed as {rel_status} based on historical training bounds.")
@@ -52,6 +78,8 @@ class RecommendationEngine:
             "recommended_inputs": inputs,
             "baseline_prediction": baseline_prediction,
             "predicted_co2": pred_co2,
+            "rf_prediction": rf_pred,
+            "xgb_prediction": xgb_pred,
             "estimated_reduction_kg": abs(co2_change) if co2_change < 0 else 0.0,
             "estimated_reduction_percentage": abs(co2_change_pct) if co2_change < 0 else 0.0,
             "co2_change": co2_change,
@@ -59,6 +87,7 @@ class RecommendationEngine:
             "reliability_status": rel_status,
             "feasible": True,
             "recommendation_reasons": reasons,
+            "change_summary": change_summary,
             "shap_explanation": shap_explanation,
         }
 

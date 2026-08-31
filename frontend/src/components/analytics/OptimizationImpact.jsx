@@ -21,7 +21,7 @@ export const OptimizationImpact = ({ optimizationData }) => {
             Model-Estimated Optimization Impact Tracking
           </h3>
           <p className="text-[11px] text-slate-500 mt-0.5">
-            Aggregated carbon reduction impact derived from Phase 11 automated constrained optimization search runs.
+            Aggregated carbon reduction impact derived from automated constrained optimization search runs.
           </p>
         </div>
 

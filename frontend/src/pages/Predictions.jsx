@@ -48,7 +48,7 @@ export const Predictions = () => {
               <Cpu className="w-5 h-5" />
             </div>
             <span className="text-xs font-semibold text-cyan-400 uppercase tracking-wider">
-              Phase 8 Prediction Lifecycle Audit History
+              Prediction Lifecycle Audit History
             </span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-white">

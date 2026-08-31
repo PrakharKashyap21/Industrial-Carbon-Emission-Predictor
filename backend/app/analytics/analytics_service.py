@@ -133,5 +133,32 @@ class AnalyticsService:
             optimization_data=opt_data,
         )
 
+    def get_plant_comparison(self, db: Session, days: int = 30) -> Dict[str, Any]:
+        """Fetch multi-plant comparative metrics and ranking based on emission intensity."""
+        from app.models.plant import Plant
+        plants_query = select(Plant).where(Plant.is_active == True)
+        plants_objs = db.execute(plants_query).scalars().all()
+
+        results = []
+        for p in plants_objs:
+            readings = self._fetch_readings(db=db, plant_id=p.id, days=days)
+            kpis = kpi_engine.calculate_kpis(readings)
+            results.append({
+                "plant_id": p.id,
+                "plant_name": p.plant_name,
+                "total_co2": kpis["total_co2"],
+                "average_co2": kpis["average_co2"],
+                "total_production": kpis["total_production"],
+                "emission_intensity": kpis["emission_intensity"],
+                "rank": 1,
+            })
+
+        # Rank by lowest emission intensity
+        results.sort(key=lambda x: (x["emission_intensity"] if x["emission_intensity"] > 0 else 999999.0))
+        for idx, item in enumerate(results):
+            item["rank"] = idx + 1
+
+        return {"plants": results}
+
 
 analytics_service = AnalyticsService()

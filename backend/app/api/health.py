@@ -48,7 +48,7 @@ def readiness_probe(db: Session = Depends(get_db)) -> dict:
     try:
         db.execute(text("SELECT 1"))
         db_ready = True
-    except Exception as e:
+    except Exception:
         db_ready = False
 
     model_ready = prediction_service.is_loaded() if hasattr(prediction_service, "is_loaded") else True
@@ -65,3 +65,51 @@ def readiness_probe(db: Session = Depends(get_db)) -> dict:
         "model": "loaded" if model_ready else "not_loaded",
         "phase": "Phase 15 — Production Deployment",
     }
+
+
+from sqlalchemy import func, select
+from app.schemas.health import HealthCheckResponse, SystemHealthResponse
+from app.models.auth import User
+from app.models.plant import Plant
+from app.models.monitoring import MonitoringAlert
+from app.models.industrial_reading import IndustrialReading
+
+@router.get(
+    "/health/system",
+    response_model=SystemHealthResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Comprehensive System Health & Infrastructure Overview",
+    description="Fetch live health metrics including API, database connectivity, ML ensemble status, user counts, and data pipeline freshness."
+)
+def get_system_health(db: Session = Depends(get_db)) -> SystemHealthResponse:
+    """Fetch comprehensive system health status."""
+    db_status = "healthy"
+    try:
+        db.execute(text("SELECT 1"))
+    except Exception:
+        db_status = "unavailable"
+
+    model_ready = prediction_service.is_loaded() if hasattr(prediction_service, "is_loaded") else True
+    model_status = "available" if model_ready else "unavailable"
+
+    total_users = db.scalar(select(func.count(User.id))) or 0
+    total_plants = db.scalar(select(func.count(Plant.id))) or 0
+    active_alerts = db.scalar(select(func.count(MonitoringAlert.id)).where(MonitoringAlert.status == "active")) or 0
+    total_readings = db.scalar(select(func.count(IndustrialReading.id))) or 0
+
+    latest_reading = db.scalar(select(func.max(IndustrialReading.timestamp)))
+    latest_ts_str = latest_reading.isoformat() if latest_reading else "N/A"
+
+    return SystemHealthResponse(
+        api_status="healthy",
+        database_status=db_status,
+        model_name="RF + XGBoost Weighted Ensemble",
+        model_status=model_status,
+        model_version="v1.2.0-ensemble",
+        total_users=total_users,
+        total_plants=total_plants,
+        active_alerts=active_alerts,
+        total_readings=total_readings,
+        latest_reading_timestamp=latest_ts_str,
+        data_freshness="Operational" if total_readings > 0 else "Empty",
+    )

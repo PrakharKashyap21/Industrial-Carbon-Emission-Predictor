@@ -189,3 +189,27 @@ def test_11_unauthorized_plant_report(client, operator_headers):
 def test_12_invalid_report_download(client, admin_headers):
     res = client.get("/api/reports/99999/download", headers=admin_headers)
     assert res.status_code == 404
+
+
+# Test 13: Report Type Alias Normalization & Distinct Content Validation
+def test_13_report_type_alias_and_distinct_content(client, admin_headers):
+    aliases = [
+        ("EXECUTIVE_SUMMARY", "EXECUTIVE", "Executive Carbon Performance"),
+        ("ANALYTICS_PERFORMANCE", "ANALYTICS", "Industrial Telemetry"),
+        ("PREDICTION_REPORT", "PREDICTION", "Prediction Audit Trail"),
+        ("WHAT_IF_ANALYSIS", "WHAT_IF", "What-If"),
+        ("OPTIMIZATION_REPORT", "OPTIMIZATION", "Carbon Reduction Optimization"),
+        ("MODEL_MONITORING", "MONITORING", "Model Health"),
+    ]
+
+    for raw_alias, expected_type, expected_title_part in aliases:
+        res = client.post(
+            "/api/reports/preview",
+            json={"report_type": raw_alias, "plant_id": 1},
+            headers=admin_headers
+        )
+        assert res.status_code == 200
+        data = res.json()
+        assert data["report_type"] == expected_type
+        assert expected_title_part.lower() in data["title"].lower()
+

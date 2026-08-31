@@ -84,7 +84,7 @@ export const MainLayout = ({ children }) => {
                 <span>&copy; {new Date().getFullYear()}</span>
               </div>
               <div className="flex flex-wrap items-center justify-center gap-4 text-slate-400">
-                <span className="hover:text-slate-600 transition-colors">Phase 17 UI Architecture</span>
+                <span className="hover:text-slate-600 transition-colors">Industrial Carbon Platform v2.4</span>
                 <span>&bull;</span>
                 <span className="font-mono text-[11px] text-emerald-600 font-medium bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
                   Ensemble ML v1.4

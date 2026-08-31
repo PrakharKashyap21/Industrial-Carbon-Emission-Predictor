@@ -50,6 +50,18 @@ class AlertService:
 
         return new_alert
 
+    def acknowledge_alert(self, db: Session, alert_id: int) -> Optional[MonitoringAlert]:
+        """Acknowledge an active monitoring alert."""
+        alert = db.execute(select(MonitoringAlert).where(MonitoringAlert.id == alert_id)).scalar_one_or_none()
+        if not alert:
+            return None
+
+        alert.status = "acknowledged"
+        db.commit()
+        db.refresh(alert)
+
+        return alert
+
     def resolve_alert(self, db: Session, alert_id: int) -> Optional[MonitoringAlert]:
         """Resolve an active monitoring alert."""
         alert = db.execute(select(MonitoringAlert).where(MonitoringAlert.id == alert_id)).scalar_one_or_none()

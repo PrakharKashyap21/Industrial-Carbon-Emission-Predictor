@@ -148,8 +148,8 @@ export const StatusCard = () => {
                     <span className="text-cyan-300 font-semibold">{status.data.service}</span>
                   </div>
                   <div>
-                    <span className="text-slate-500 block uppercase">Phase</span>
-                    <span className="text-amber-300 font-semibold">{status.data.phase}</span>
+                    <span className="text-slate-500 block uppercase">Environment</span>
+                    <span className="text-amber-300 font-semibold">Production Ready</span>
                   </div>
                 </div>
               </div>

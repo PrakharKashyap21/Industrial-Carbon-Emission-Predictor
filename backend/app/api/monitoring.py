@@ -252,6 +252,35 @@ def get_monitoring_alerts(
 
 
 @router.patch(
+    "/alerts/{alert_id}/acknowledge",
+    response_model=AlertResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Acknowledge Monitoring Alert",
+    description="Mark active monitoring alert as acknowledged."
+)
+def acknowledge_alert(
+    alert_id: int,
+    db: Session = Depends(get_db)
+) -> AlertResponse:
+    """Acknowledge an alert."""
+    ack = alert_service.acknowledge_alert(db=db, alert_id=alert_id)
+    if not ack:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Alert ID {alert_id} not found")
+
+    return AlertResponse(
+        id=ack.id,
+        plant_id=ack.plant_id,
+        alert_type=ack.alert_type,
+        severity=ack.severity,
+        feature_name=ack.feature_name,
+        message=ack.message,
+        status=ack.status,
+        created_at=ack.created_at.isoformat() if ack.created_at else "",
+        resolved_at=ack.resolved_at.isoformat() if ack.resolved_at else None,
+    )
+
+
+@router.patch(
     "/alerts/{alert_id}/resolve",
     response_model=AlertResponse,
     status_code=status.HTTP_200_OK,

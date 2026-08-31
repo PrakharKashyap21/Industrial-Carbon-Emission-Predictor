@@ -84,6 +84,18 @@ export const getMonitoringAlerts = async (params = {}) => {
   }
 };
 
+export const acknowledgeMonitoringAlert = async (id) => {
+  try {
+    const response = await api.patch(`/monitoring/alerts/${id}/acknowledge`);
+    return { success: true, data: response.data };
+  } catch (error) {
+    return {
+      success: false,
+      error: error.response?.data?.detail || error.message || 'Failed to acknowledge alert',
+    };
+  }
+};
+
 export const resolveMonitoringAlert = async (id) => {
   try {
     const response = await api.patch(`/monitoring/alerts/${id}/resolve`);

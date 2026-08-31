@@ -12,6 +12,9 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch
 
 
+from app.reports.report_builder import normalize_report_type
+
+
 class PDFReportGenerator:
     """Server-side PDF generator constructing unified multi-page PDF documents with consistent industrial brand colors."""
 
@@ -27,7 +30,7 @@ class PDFReportGenerator:
             bottomMargin=36,
         )
 
-        r_type = (report_data.get("report_type") or "EXECUTIVE").upper()
+        r_type = normalize_report_type(report_data.get("report_type"))
 
         if r_type == "EXECUTIVE":
             story = self._build_executive_pdf(report_data, output_path)
@@ -375,14 +378,22 @@ class PDFReportGenerator:
         trend = report_data.get("trend_data", [])
         if isinstance(trend, list) and len(trend) > 0:
             dates = [t.get("date", f"D{i+1}") for i, t in enumerate(trend[:12])]
-            co2_vals = [t.get("co2_kg", t.get("actual_co2", 8200)) for t in trend[:12]]
+            co2_vals = [float(t.get("co2") or t.get("co2_kg") or t.get("actual_co2") or 8200) for t in trend[:12]]
         else:
             dates = [f"Week {i+1}" for i in range(8)]
             co2_vals = [12500, 12800, 12100, 11900, 11500, 11200, 10800, 10500]
 
-        ax1.bar(dates, co2_vals, color="#0f172a", width=0.45)
+        bars = ax1.bar(dates, co2_vals, color="#0f172a", width=0.45)
         ax1.set_ylabel("Total CO2 Emissions (kg)", color="#0f172a", fontsize=9, fontweight="bold")
         ax1.set_title("Executive CO2 Emission Trend & Decarbonization Trajectory", fontsize=10, pad=10)
+
+        # Auto-scale y limits to display clear bar height contrast if values are close
+        if co2_vals:
+            min_val = min(co2_vals)
+            max_val = max(co2_vals)
+            if min_val > 0 and (max_val - min_val) / max_val < 0.25:
+                ax1.set_ylim(bottom=max(0, min_val * 0.85), top=max_val * 1.1)
+
         plt.xticks(rotation=25, fontsize=8)
         fig.tight_layout()
         plt.savefig(chart_path, format="png")
@@ -395,12 +406,12 @@ class PDFReportGenerator:
         trend = report_data.get("trend_data", [])
         if isinstance(trend, list) and len(trend) > 0:
             dates = [t.get("date", f"D{i+1}") for i, t in enumerate(trend[:10])]
-            co2_vals = [t.get("co2_kg", t.get("actual_co2", 8200)) for t in trend[:10]]
-            prod_vals = [t.get("production_units", t.get("production", 5000)) for t in trend[:10]]
+            co2_vals = [float(t.get("co2") or t.get("co2_kg") or t.get("actual_co2") or 8200) for t in trend[:10]]
+            prod_vals = [float(t.get("production") or t.get("production_units") or 5000) for t in trend[:10]]
         else:
             dates = [f"Day {i+1}" for i in range(8)]
-            co2_vals = [8200 + i * 50 for i in range(8)]
-            prod_vals = [5000 + i * 30 for i in range(8)]
+            co2_vals = [8200 + i * 120 for i in range(8)]
+            prod_vals = [5000 + i * 80 for i in range(8)]
 
         ax1.plot(dates, co2_vals, color="#0f172a", linewidth=2.5, marker="o", label="CO2 Emissions (kg)")
         ax1.set_ylabel("CO2 Emissions (kg)", color="#0f172a", fontsize=9, fontweight="bold")
@@ -421,10 +432,10 @@ class PDFReportGenerator:
         fig, ax = plt.subplots(figsize=(8, 3.2), dpi=150)
         history = report_data.get("trend_data", [])
         if history:
-            dates = [h.get("date", f"P{i}") for i, h in enumerate(history[:8])]
-            ens_vals = [h.get("ensemble", 8500) for h in history[:8]]
-            rf_vals = [h.get("rf", 8450) for h in history[:8]]
-            xgb_vals = [h.get("xgb", 8540) for h in history[:8]]
+            dates = [h.get("date", f"P{i+1}") for i, h in enumerate(history[:8])]
+            ens_vals = [float(h.get("ensemble") or h.get("ensemble_prediction_kg") or 8500) for h in history[:8]]
+            rf_vals = [float(h.get("rf") or h.get("rf_prediction_kg") or 8450) for h in history[:8]]
+            xgb_vals = [float(h.get("xgb") or h.get("xgb_prediction_kg") or 8540) for h in history[:8]]
         else:
             dates = [f"Sample {i+1}" for i in range(8)]
             ens_vals = [8209, 8452, 8112, 8617, 8918, 8310, 8766, 8410]
@@ -446,16 +457,19 @@ class PDFReportGenerator:
     def _generate_chart_whatif(self, report_data, output_path):
         chart_path = output_path + ".whatif.png"
         fig, ax = plt.subplots(figsize=(8, 3.2), dpi=150)
-        base_val = report_data.get("baseline_prediction_kg", 8500)
-        scen_val = report_data.get("scenario_prediction_kg", 7950)
-        pct = report_data.get("percentage_change", -6.47)
+        base_val = float(report_data.get("baseline_prediction_kg", 8500))
+        scen_val = float(report_data.get("scenario_prediction_kg", 7950))
+        pct = float(report_data.get("percentage_change", -6.47))
 
         bars = ax.bar(["Current Baseline", "Simulated Scenario"], [base_val, scen_val], color=["#64748b", "#0284c7"], width=0.4)
         ax.set_ylabel("Predicted CO2 (kg)", fontsize=9, fontweight="bold")
         ax.set_title(f"What-If Simulation Impact: {pct:+.2f}% Carbon Emission Delta", fontsize=10, pad=10)
         for bar in bars:
             yval = bar.get_height()
-            ax.text(bar.get_x() + bar.get_width()/2, yval + 100, f"{yval:,.0f} kg", ha="center", va="bottom", fontsize=9, fontweight="bold")
+            ax.text(bar.get_x() + bar.get_width()/2, yval + (yval * 0.015), f"{yval:,.1f} kg", ha="center", va="bottom", fontsize=9, fontweight="bold")
+
+        if min(base_val, scen_val) > 0:
+            ax.set_ylim(bottom=min(base_val, scen_val) * 0.85, top=max(base_val, scen_val) * 1.15)
 
         fig.tight_layout()
         plt.savefig(chart_path, format="png")
@@ -465,16 +479,19 @@ class PDFReportGenerator:
     def _generate_chart_optimization(self, report_data, output_path):
         chart_path = output_path + ".opt.png"
         fig, ax = plt.subplots(figsize=(8, 3.2), dpi=150)
-        base_val = report_data.get("baseline_co2_kg", 8500)
-        opt_val = report_data.get("optimized_co2_kg", 7425)
-        red_pct = report_data.get("estimated_reduction_pct", 12.65)
+        base_val = float(report_data.get("baseline_co2_kg", 8500))
+        opt_val = float(report_data.get("optimized_co2_kg", 7425))
+        red_pct = float(report_data.get("estimated_reduction_pct", 12.65))
 
         bars = ax.bar(["Baseline State", "Optimized Scenario"], [base_val, opt_val], color=["#64748b", "#0f172a"], width=0.4)
         ax.set_ylabel("Predicted CO2 (kg)", fontsize=9, fontweight="bold")
         ax.set_title(f"Model-Recommended Optimization: -{red_pct:.1f}% Carbon Savings", fontsize=10, pad=10)
         for bar in bars:
             yval = bar.get_height()
-            ax.text(bar.get_x() + bar.get_width()/2, yval + 100, f"{yval:,.0f} kg", ha="center", va="bottom", fontsize=9, fontweight="bold")
+            ax.text(bar.get_x() + bar.get_width()/2, yval + (yval * 0.015), f"{yval:,.1f} kg", ha="center", va="bottom", fontsize=9, fontweight="bold")
+
+        if min(base_val, opt_val) > 0:
+            ax.set_ylim(bottom=min(base_val, opt_val) * 0.85, top=max(base_val, opt_val) * 1.15)
 
         fig.tight_layout()
         plt.savefig(chart_path, format="png")
@@ -487,7 +504,7 @@ class PDFReportGenerator:
         drift_features = report_data.get("drift_features", [])
         if drift_features:
             names = [f.get("feature_name", f"Feature {i}")[:12] for i, f in enumerate(drift_features[:6])]
-            psi_vals = [f.get("psi", 0.04) for f in drift_features[:6]]
+            psi_vals = [float(f.get("psi", 0.04)) for f in drift_features[:6]]
         else:
             names = ["Electricity", "Diesel", "Gas", "Production", "Runtime", "Pressure"]
             psi_vals = [0.04, 0.02, 0.08, 0.03, 0.05, 0.01]

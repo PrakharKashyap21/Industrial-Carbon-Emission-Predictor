@@ -89,10 +89,6 @@ export const getReadings = async (page = 1, pageSize = 10, plantId = null) => {
   }
 };
 
-/**
- * Generate preview predictions using RF, XGBoost, and Ensemble models.
- * POST /api/predictions/preview
- */
 export const predictCO2Preview = async (payload) => {
   try {
     const response = await apiClient.post('/predictions/preview', payload);
@@ -101,9 +97,22 @@ export const predictCO2Preview = async (payload) => {
       data: response.data,
     };
   } catch (error) {
+    let errMsg = 'Prediction service is temporarily unavailable. Please try again.';
+    if (error.response?.data?.detail) {
+      const detail = error.response.data.detail;
+      if (typeof detail === 'string') {
+        errMsg = detail;
+      } else if (Array.isArray(detail)) {
+        errMsg = detail.map((d) => d.msg || JSON.stringify(d)).join(' | ');
+      } else {
+        errMsg = JSON.stringify(detail);
+      }
+    } else if (error.message) {
+      errMsg = error.message;
+    }
     return {
       success: false,
-      error: error.response?.data?.detail || error.message,
+      error: errMsg,
     };
   }
 };

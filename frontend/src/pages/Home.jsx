@@ -13,7 +13,7 @@ export const Home = () => {
         <div className="max-w-3xl space-y-4 relative z-10">
           <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-cyan-950/60 border border-cyan-800/40 text-cyan-400 text-xs font-semibold">
             <Sparkles className="w-3.5 h-3.5" />
-            <span>Phase 1 Architecture Initialized</span>
+            <span>Enterprise Carbon System Active</span>
           </div>
 
           <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white tracking-tight leading-tight">
@@ -48,11 +48,11 @@ export const Home = () => {
         <StatusCard />
       </section>
 
-      {/* Phase Roadmap Overview */}
+      {/* Platform Architecture & Modules */}
       <section className="space-y-4 pt-4">
         <h2 className="text-xl font-bold text-slate-100 flex items-center">
           <Layers className="w-5 h-5 mr-2 text-cyan-400" />
-          Architectural Blueprint & Roadmap
+          System Architecture & Core Modules
         </h2>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -60,12 +60,12 @@ export const Home = () => {
             <div className="p-3 bg-cyan-950/60 text-cyan-400 rounded-xl border border-cyan-800/40 w-fit mb-4">
               <FileCode className="w-6 h-6" />
             </div>
-            <h3 className="text-base font-bold text-slate-100 mb-1">Phase 1: Foundation</h3>
+            <h3 className="text-base font-bold text-slate-100 mb-1">Core Architecture</h3>
             <p className="text-xs text-slate-400 leading-relaxed mb-4">
               Project structure, React/Vite frontend, FastAPI backend, CORS setup, and API health communication.
             </p>
             <span className="inline-flex items-center px-2.5 py-0.5 rounded text-[11px] font-bold bg-emerald-950 text-emerald-400 border border-emerald-800">
-              Active Phase
+              Active Module
             </span>
           </div>
 
@@ -73,12 +73,12 @@ export const Home = () => {
             <div className="p-3 bg-slate-800/60 text-slate-400 rounded-xl border border-slate-700/60 w-fit mb-4">
               <Database className="w-6 h-6" />
             </div>
-            <h3 className="text-base font-bold text-slate-200 mb-1">Phase 2: Data & PostgreSQL</h3>
+            <h3 className="text-base font-bold text-slate-200 mb-1">Data & Database Engine</h3>
             <p className="text-xs text-slate-400 leading-relaxed mb-4">
               PostgreSQL schema creation, industrial facility dataset ingestion, feature engineering, and data pipeline.
             </p>
-            <span className="inline-flex items-center px-2.5 py-0.5 rounded text-[11px] font-medium bg-slate-800 text-slate-400 border border-slate-700">
-              Upcoming
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded text-[11px] font-medium bg-emerald-950 text-emerald-400 border border-emerald-800">
+              Active Module
             </span>
           </div>
 
@@ -86,12 +86,12 @@ export const Home = () => {
             <div className="p-3 bg-slate-800/60 text-slate-400 rounded-xl border border-slate-700/60 w-fit mb-4">
               <LineChart className="w-6 h-6" />
             </div>
-            <h3 className="text-base font-bold text-slate-200 mb-1">Phase 3+: ML Ensemble & XAI</h3>
+            <h3 className="text-base font-bold text-slate-200 mb-1">ML Ensemble & Explainability</h3>
             <p className="text-xs text-slate-400 leading-relaxed mb-4">
               Random Forest + XGBoost regressor ensemble, SHAP explainable AI, and interactive What-if scenario analysis.
             </p>
-            <span className="inline-flex items-center px-2.5 py-0.5 rounded text-[11px] font-medium bg-slate-800 text-slate-400 border border-slate-700">
-              Upcoming
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded text-[11px] font-medium bg-emerald-950 text-emerald-400 border border-emerald-800">
+              Active Module
             </span>
           </div>
         </div>

@@ -45,7 +45,7 @@ export const PredictionAnalytics = () => {
                 <Scale className="w-5 h-5" />
               </div>
               <span className="text-xs font-semibold text-cyan-400 uppercase tracking-wider">
-                Phase 8 Operational Performance Analytics
+                Operational Performance Analytics
               </span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-extrabold text-white">

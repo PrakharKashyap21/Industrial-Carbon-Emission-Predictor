@@ -38,6 +38,21 @@ class KPIEngine:
 
         intensity = (tot_co2 / tot_prod) if tot_prod > 0 else 0.0
 
+        # Calculate Trend Direction (First half vs Second half)
+        trend_direction = "STABLE"
+        if count >= 4:
+            mid = count // 2
+            first_half_avg = sum(co2_vals[:mid]) / mid
+            second_half_avg = sum(co2_vals[mid:]) / (count - mid)
+            if first_half_avg > 0:
+                pct_diff = ((second_half_avg - first_half_avg) / first_half_avg) * 100.0
+                if pct_diff > 2.0:
+                    trend_direction = "INCREASING"
+                elif pct_diff < -2.0:
+                    trend_direction = "DECREASING"
+
+        data_coverage = f"Data available for {count} observations"
+
         return {
             "total_co2": round(tot_co2, 2),
             "average_co2": round(avg_co2, 2),
@@ -50,6 +65,8 @@ class KPIEngine:
             "average_diesel_liters": round(sum(fuel_vals) / count, 2) if count > 0 else 0.0,
             "average_runtime_hours": round(sum(runtime_vals) / count, 2) if count > 0 else 0.0,
             "observation_count": count,
+            "trend_direction": trend_direction,
+            "data_coverage": data_coverage,
         }
 
 

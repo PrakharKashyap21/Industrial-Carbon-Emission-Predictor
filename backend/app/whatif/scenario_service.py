@@ -16,8 +16,23 @@ from app.ml.explainability.explanation_service import explanation_service
 class ScenarioService:
     """Master Orchestrator managing What-if Scenario simulations, batch comparisons, sensitivity curves, and DB persistence."""
 
-    def get_baseline_features(self, db: Session, baseline_id: Optional[int] = None, plant_id: Optional[int] = 1) -> Tuple[Dict[str, Any], int]:
-        """Fetch baseline features dictionary from PostgreSQL industrial readings table."""
+    def get_baseline_features(self, db: Session, baseline_id: Optional[int] = None, plant_id: Optional[int] = 1, custom_baseline: Optional[Dict[str, Any]] = None) -> Tuple[Dict[str, Any], int]:
+        """Fetch baseline features dictionary from payload override, PostgreSQL industrial readings table, or fallback."""
+        if custom_baseline and isinstance(custom_baseline, dict) and len(custom_baseline) > 0:
+            features = {
+                "plant_id": custom_baseline.get("plant_id", plant_id or 1),
+                "electricity_consumption_kwh": float(custom_baseline.get("electricity_consumption_kwh", 14000.0)),
+                "diesel_consumption_liters": float(custom_baseline.get("diesel_consumption_liters", 600.0)),
+                "natural_gas_consumption_m3": float(custom_baseline.get("natural_gas_consumption_m3", 2500.0)),
+                "production_quantity": float(custom_baseline.get("production_quantity", 5000.0)),
+                "raw_material_consumption_kg": float(custom_baseline.get("raw_material_consumption_kg", 5000.0)),
+                "machine_runtime_hours": float(custom_baseline.get("machine_runtime_hours", 18.0)),
+                "temperature_c": float(custom_baseline.get("temperature_c", 26.0)),
+                "pressure_bar": float(custom_baseline.get("pressure_bar", 7.0)),
+                "previous_co2_emission_kg": float(custom_baseline.get("previous_co2_emission_kg", 6500.0)),
+            }
+            return features, baseline_id or 1
+
         reading_obj = None
         if baseline_id:
             reading_obj = db.execute(select(IndustrialReading).where(IndustrialReading.id == baseline_id)).scalar_one_or_none()
@@ -68,8 +83,9 @@ class ScenarioService:
         change_type = payload.get("change_type", "percentage")
         scen_name = payload.get("scenario_name", "Custom Scenario")
         constraints = payload.get("constraints")
+        custom_base = payload.get("baseline_features") or payload.get("baseline_inputs")
 
-        baseline_features, reading_id = self.get_baseline_features(db, baseline_id=baseline_id, plant_id=plant_id)
+        baseline_features, reading_id = self.get_baseline_features(db, baseline_id=baseline_id, plant_id=plant_id, custom_baseline=custom_base)
 
         # 1. Run Simulation
         sim_res = scenario_engine.simulate_scenario(
@@ -124,8 +140,9 @@ class ScenarioService:
         plant_id = payload.get("plant_id", 1)
         scenarios_payload = payload.get("scenarios", [])
         constraints = payload.get("constraints")
+        custom_base = payload.get("baseline_features") or payload.get("baseline_inputs")
 
-        baseline_features, reading_id = self.get_baseline_features(db, baseline_id=baseline_id, plant_id=plant_id)
+        baseline_features, reading_id = self.get_baseline_features(db, baseline_id=baseline_id, plant_id=plant_id, custom_baseline=custom_base)
 
         res = scenario_comparator.compare_batch(
             baseline_features=baseline_features,
@@ -143,8 +160,9 @@ class ScenarioService:
         plant_id = payload.get("plant_id", 1)
         feature = payload.get("feature", "electricity_consumption_kwh")
         changes_list = payload.get("changes", [-20.0, -15.0, -10.0, -5.0, 0.0, 5.0, 10.0])
+        custom_base = payload.get("baseline_features") or payload.get("baseline_inputs")
 
-        baseline_features, reading_id = self.get_baseline_features(db, baseline_id=baseline_id, plant_id=plant_id)
+        baseline_features, reading_id = self.get_baseline_features(db, baseline_id=baseline_id, plant_id=plant_id, custom_baseline=custom_base)
 
         points = []
         for change_pct in sorted(changes_list):

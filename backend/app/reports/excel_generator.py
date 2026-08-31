@@ -5,6 +5,9 @@ from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
 
 
+from app.reports.report_builder import normalize_report_type
+
+
 class ExcelReportGenerator:
     """Multi-sheet Excel workbook generator styling worksheets with professional formatting and filters."""
 
@@ -12,6 +15,7 @@ class ExcelReportGenerator:
         """Generate Excel workbook and save file to output_path."""
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
         wb = openpyxl.Workbook()
+        r_type = normalize_report_type(report_data.get("report_type"))
 
         # Define Styles
         header_fill = PatternFill(start_color="0F172A", end_color="0F172A", fill_type="solid")
@@ -27,10 +31,10 @@ class ExcelReportGenerator:
         )
 
         # ----------------------------------------------------
-        # Sheet 1: Executive Summary
+        # Sheet 1: Executive / Primary Metrics Summary
         # ----------------------------------------------------
         ws_sum = wb.active
-        ws_sum.title = "Executive Summary"
+        ws_sum.title = f"{r_type.capitalize()} Summary"
         ws_sum.views.sheetView[0].showGridLines = True
 
         ws_sum["A1"] = "INDUSTRIAL CARBON INTELLIGENCE PLATFORM"
@@ -43,7 +47,7 @@ class ExcelReportGenerator:
             ["Plant Code", report_data.get("plant_code")],
             ["Reporting Period", f"{report_data.get('period_start')} to {report_data.get('period_end')}"],
             ["Generated At", report_data.get("generated_at")],
-            ["Report Type", report_data.get("report_type")],
+            ["Report Type", r_type],
         ]
 
         for r_idx, (k, v) in enumerate(metadata, start=4):

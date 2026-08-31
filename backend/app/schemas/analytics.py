@@ -14,6 +14,22 @@ class KPIOverviewResponse(BaseModel):
     average_diesel_liters: float
     average_runtime_hours: float
     observation_count: int
+    trend_direction: Optional[str] = "STABLE"
+    data_coverage: Optional[str] = "100%"
+
+
+class PlantComparisonItem(BaseModel):
+    plant_id: int
+    plant_name: str
+    total_co2: float
+    average_co2: float
+    total_production: float
+    emission_intensity: float
+    rank: int
+
+
+class PlantComparisonResponse(BaseModel):
+    plants: List[PlantComparisonItem]
 
 
 class EmissionIntensityResponse(BaseModel):

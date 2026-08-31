@@ -45,17 +45,26 @@ export const Optimization = () => {
   const [allCandidates, setAllCandidates] = useState([]);
   const [history, setHistory] = useState([]);
 
+  const [prefilled, setPrefilled] = useState(false);
+
   useEffect(() => {
-    handleExecuteOptimization();
+    const currentInputs = location.state?.currentInputs || location.state?.baselineInputs || null;
+    if (currentInputs) {
+      setPrefilled(true);
+    }
+    handleExecuteOptimization(currentInputs);
     fetchHistory();
   }, [selectedPlantId, location.state]);
 
-  const handleExecuteOptimization = async () => {
+  const handleExecuteOptimization = async (customInputs = null) => {
     setLoading(true);
     setError(null);
 
+    const currentInputs = customInputs || location.state?.currentInputs || location.state?.baselineInputs || null;
+
     const payload = {
       plant_id: plantIdParam,
+      baseline_features: currentInputs,
       constraints,
       search: searchParams,
     };
@@ -65,6 +74,9 @@ export const Optimization = () => {
 
     if (res.success) {
       setOptimizationResult(res.data);
+      if (!res.data.recommended_candidate) {
+        setError("No feasible low-emission scenario was found within the current operating constraints.");
+      }
       if (res.data.optimization_id) {
         fetchCandidates(res.data.optimization_id);
       }
@@ -96,18 +108,26 @@ export const Optimization = () => {
         subtitle="Evaluate feasible operating configurations using AI decision support search to identify model-estimated carbon reductions."
         badge={
           <Badge variant="healthy" dot>
-            Optimization Decision Support
+            Optimization Recommendation Engine
           </Badge>
         }
       >
-        <Button
-          variant="secondary"
-          size="sm"
-          icon={TrendingDown}
-          onClick={() => navigate('/reports')}
-        >
-          Generate Optimization Report
-        </Button>
+        <div className="flex items-center space-x-2">
+          {prefilled && (
+            <span className="px-3 py-1.5 bg-cyan-100 text-cyan-800 border border-cyan-300 rounded-xl text-xs font-bold font-mono flex items-center gap-1">
+              <Zap className="w-3.5 h-3.5 text-cyan-600" /> Prefilled from Workflow
+            </span>
+          )}
+
+          <Button
+            variant="secondary"
+            size="sm"
+            icon={TrendingDown}
+            onClick={() => navigate('/reports')}
+          >
+            Generate Optimization Report
+          </Button>
+        </div>
       </PageHeader>
 
       {/* Error Alert */}

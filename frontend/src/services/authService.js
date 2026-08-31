@@ -115,3 +115,12 @@ export const getAuditLogs = async (params = {}) => {
     return { success: false, error: error.response?.data?.detail || error.message || 'Failed to fetch audit logs' };
   }
 };
+
+export const getSystemHealth = async () => {
+  try {
+    const response = await api.get('/health/system');
+    return { success: true, data: response.data };
+  } catch (error) {
+    return { success: false, error: error.response?.data?.detail || error.message || 'Failed to fetch system health' };
+  }
+};
