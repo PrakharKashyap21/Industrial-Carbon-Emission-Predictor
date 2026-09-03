@@ -40,7 +40,7 @@ export const FilterProvider = ({ children }) => {
 
     fetchPlantsData();
     return () => { isMounted = false; };
-  }, [user]);
+  }, [user?.id, user?.plant_id]);
 
   const value = {
     selectedPlantId,

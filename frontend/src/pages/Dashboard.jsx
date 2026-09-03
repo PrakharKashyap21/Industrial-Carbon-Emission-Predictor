@@ -66,8 +66,8 @@ export const Dashboard = () => {
         title="Industrial Carbon Overview"
         subtitle="Real-time CO₂ emission tracking, ensemble predictive analytics, and plant performance KPIs"
         badge={
-          <Badge variant="healthy" dot>
-            System Operational
+          <Badge variant={error ? "warning" : "healthy"} dot>
+            {error ? "Service Delayed" : "System Operational"}
           </Badge>
         }
       >
@@ -113,7 +113,7 @@ export const Dashboard = () => {
         </Alert>
       )}
 
-      {/* Loading Skeleton */}
+      {/* Loading Skeleton (Only during initial boot when no data exists yet) */}
       {loading && !data && (
         <LoadingState message="Fetching real-time industrial telemetry & carbon metrics..." type="card" />
       )}

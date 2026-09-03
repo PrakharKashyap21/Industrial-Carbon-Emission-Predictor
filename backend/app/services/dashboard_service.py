@@ -7,6 +7,7 @@ from sqlalchemy import select, func
 
 from app.models.plant import Plant
 from app.models.industrial_reading import IndustrialReading
+from app.models.prediction import Prediction
 from app.ml.prediction_service import prediction_service
 from app.ml.explainability.explanation_service import explanation_service
 from app.analytics.emission_analytics import aggregate_reading_metrics
@@ -42,28 +43,47 @@ class DashboardService:
                     "industry_type": "Manufacturing",
                 }
 
-        # 2. Query Historical Readings
-        query = select(IndustrialReading).order_by(IndustrialReading.timestamp.asc())
+        # 2. Query Total Count & Latest Reading via SQL
+        count_stmt = select(func.count(IndustrialReading.id))
+        latest_stmt = select(IndustrialReading).order_by(IndustrialReading.timestamp.desc()).limit(1)
+
         if plant_id:
-            query = query.where(IndustrialReading.plant_id == plant_id)
+            count_stmt = count_stmt.where(IndustrialReading.plant_id == plant_id)
+            latest_stmt = latest_stmt.where(IndustrialReading.plant_id == plant_id)
 
-        all_readings = db.execute(query).scalars().all()
+        total_count = db.scalar(count_stmt) or 0
+        latest_r = db.execute(latest_stmt).scalar_one_or_none()
 
-        if not all_readings:
+        if total_count == 0 or not latest_r:
             return self._build_empty_response(plant_info, days)
 
-        # Cutoff filtering by date range if applicable
-        latest_ts = all_readings[-1].timestamp
+        # Cutoff filtering by date range pushed directly to SQL database
+        latest_ts = latest_r.timestamp
         cutoff_ts = latest_ts - timedelta(days=days)
-        filtered_readings = [r for r in all_readings if r.timestamp >= cutoff_ts]
+        prev_cutoff_ts = cutoff_ts - timedelta(days=days)
+
+        filtered_stmt = select(IndustrialReading).where(IndustrialReading.timestamp >= cutoff_ts).order_by(IndustrialReading.timestamp.asc())
+        if plant_id:
+            filtered_stmt = filtered_stmt.where(IndustrialReading.plant_id == plant_id)
+
+        filtered_readings = db.execute(filtered_stmt).scalars().all()
 
         if not filtered_readings:
-            filtered_readings = all_readings[-days:]
+            fallback_stmt = select(IndustrialReading).order_by(IndustrialReading.timestamp.desc()).limit(days)
+            if plant_id:
+                fallback_stmt = fallback_stmt.where(IndustrialReading.plant_id == plant_id)
+            filtered_readings = list(reversed(db.execute(fallback_stmt).scalars().all()))
+
+        # Query previous period readings via SQL
+        prev_stmt = select(IndustrialReading).where(
+            IndustrialReading.timestamp >= prev_cutoff_ts,
+            IndustrialReading.timestamp < cutoff_ts
+        ).order_by(IndustrialReading.timestamp.asc())
+        if plant_id:
+            prev_stmt = prev_stmt.where(IndustrialReading.plant_id == plant_id)
+        prev_readings = db.execute(prev_stmt).scalars().all()
 
         # 3. Calculate Period-over-Period Trend Metrics
-        prev_cutoff_ts = cutoff_ts - timedelta(days=days)
-        prev_readings = [r for r in all_readings if prev_cutoff_ts <= r.timestamp < cutoff_ts]
-
         cur_aggregates = aggregate_reading_metrics(filtered_readings)
         prev_aggregates = aggregate_reading_metrics(prev_readings)
 
@@ -71,7 +91,7 @@ class DashboardService:
         prod_trend_pct = calculate_trend_percentage(cur_aggregates["production_avg"], prev_aggregates["production_avg"])
         elec_trend_pct = calculate_trend_percentage(cur_aggregates["electricity_avg"], prev_aggregates["electricity_avg"])
 
-        # 4. Latest Reading & Latest Prediction
+        # 4. Latest Reading & Latest Prediction (1 live prediction call for KPI)
         latest_r = filtered_readings[-1]
         raw_latest = {
             "plant_id": latest_r.plant_id,
@@ -90,33 +110,25 @@ class DashboardService:
         latest_pred_res = prediction_service.predict(raw_latest)
         latest_pred_kg = latest_pred_res["ensemble_prediction_kg"]
 
-        # 5. Build Time-Series Trend Charts Data
+        # 5. Fetch Stored Predictions for Filtered Readings to avoid redundant ML re-inference
+        filtered_ids = [r.id for r in filtered_readings]
+        stored_preds = {}
+        if filtered_ids:
+            pred_records = db.execute(
+                select(Prediction).where(Prediction.reading_id.in_(filtered_ids))
+            ).scalars().all()
+            stored_preds = {p.reading_id: p.ensemble_prediction for p in pred_records}
+
+        # Build Time-Series Trend Charts Data
         time_series = []
         actual_co2_list = []
-        pred_co2_list = []
 
         for r in filtered_readings:
-            raw_r = {
-                "plant_id": r.plant_id,
-                "electricity_consumption_kwh": r.electricity_consumption_kwh,
-                "diesel_consumption_liters": r.diesel_consumption_liters,
-                "natural_gas_consumption_m3": r.natural_gas_consumption_m3,
-                "production_quantity": r.production_quantity,
-                "raw_material_consumption_kg": r.raw_material_consumption_kg,
-                "machine_runtime_hours": r.machine_runtime_hours,
-                "temperature_c": r.temperature_c,
-                "pressure_bar": r.pressure_bar,
-                "previous_co2_emission_kg": r.previous_co2_emission_kg,
-                "timestamp": r.timestamp.isoformat(),
-            }
-
-            p_res = prediction_service.predict(raw_r)
-            pred_kg = p_res["ensemble_prediction_kg"]
             act_kg = r.actual_co2_emission_kg
-
             actual_co2_list.append(act_kg)
-            pred_co2_list.append(pred_kg)
 
+            # Use stored ensemble prediction if available, else actual recorded emission
+            pred_kg = stored_preds.get(r.id, act_kg)
             intensity = calculate_co2_intensity(act_kg, r.production_quantity)
 
             time_series.append({
@@ -140,7 +152,7 @@ class DashboardService:
         # 6. Model Performance & Version Metadata
         model_info = self._load_model_performance()
 
-        # 7. Global SHAP Top Drivers
+        # 7. Global SHAP Top Drivers (Uses cached result)
         try:
             shap_global = explanation_service.generate_global_importance(sample_size=50)
             top_shap_features = shap_global.get("features", [])[:6]
@@ -148,7 +160,6 @@ class DashboardService:
             top_shap_features = []
 
         # 8. Data Quality Summary
-        total_count = len(all_readings)
         latest_ts_str = latest_r.timestamp.strftime("%Y-%m-%d %H:%M UTC")
 
         return {

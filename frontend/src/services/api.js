@@ -7,7 +7,7 @@ const API_BASE_URL = cleanBaseUrl.endsWith('/api') ? cleanBaseUrl : `${cleanBase
 
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 60000,
+  timeout: 15000,
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
@@ -15,13 +15,13 @@ const apiClient = axios.create({
 });
 
 /**
- * Perform backend health check API call.
+ * Perform backend health check API call with short 5s timeout.
  * GET /api/health
  */
 export const getHealthCheck = async () => {
   const startTime = Date.now();
   try {
-    const response = await apiClient.get('/health');
+    const response = await apiClient.get('/health', { timeout: 5000 });
     const latency = Date.now() - startTime;
     return {
       success: true,
@@ -32,7 +32,9 @@ export const getHealthCheck = async () => {
   } catch (error) {
     const latency = Date.now() - startTime;
     let message = 'Unable to connect to backend service.';
-    if (error.response) {
+    if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
+      message = 'Health check timed out. Backend service may be offline or starting up.';
+    } else if (error.response) {
       message = `Backend returned status ${error.response.status}`;
     } else if (error.request) {
       message = 'Backend service is offline or unreachable.';

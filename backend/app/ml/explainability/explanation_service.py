@@ -1,4 +1,5 @@
 import os
+import threading
 import numpy as np
 import pandas as pd
 from typing import Dict, Any
@@ -23,6 +24,8 @@ class ExplanationService:
         self.xgb_model = None
         self.rf_weight = 0.45
         self.feature_order = []
+        self._cached_global_importance = None
+        self._cache_lock = threading.Lock()
         self._load_models()
 
     def _load_models(self):
@@ -119,34 +122,43 @@ class ExplanationService:
 
     def generate_global_importance(self, sample_size: int = 100) -> dict:
         """Compute global feature importances across training data sample."""
-        if not self.rf_model or not self.xgb_model:
-            self._load_models()
+        if self._cached_global_importance is not None:
+            return self._cached_global_importance
 
-        X_train_path = os.path.join(PROCESSED_DIR, "X_train.csv")
-        if not os.path.exists(X_train_path):
-            raise FileNotFoundError(f"Training dataset not found at {X_train_path}")
+        with self._cache_lock:
+            if self._cached_global_importance is not None:
+                return self._cached_global_importance
 
-        X_train = pd.read_csv(X_train_path)[self.feature_order].head(sample_size)
+            if not self.rf_model or not self.xgb_model:
+                self._load_models()
 
-        rf_explainer = explainer_manager.get_rf_explainer(self.rf_model)
-        xgb_explainer = explainer_manager.get_xgb_explainer(self.xgb_model)
+            X_train_path = os.path.join(PROCESSED_DIR, "X_train.csv")
+            if not os.path.exists(X_train_path):
+                raise FileNotFoundError(f"Training dataset not found at {X_train_path}")
 
-        rf_shap_vals = np.asarray(rf_explainer(X_train).values)
-        xgb_shap_vals = np.asarray(xgb_explainer(X_train).values)
+            X_train = pd.read_csv(X_train_path)[self.feature_order].head(sample_size)
 
-        ens_shap_vals = self.rf_weight * rf_shap_vals + (1.0 - self.rf_weight) * xgb_shap_vals
+            rf_explainer = explainer_manager.get_rf_explainer(self.rf_model)
+            xgb_explainer = explainer_manager.get_xgb_explainer(self.xgb_model)
 
-        importance_list = calculate_global_shap_importance(
-            shap_matrix=ens_shap_vals,
-            feature_names=self.feature_order,
-            save_plot=True
-        )
+            rf_shap_vals = np.asarray(rf_explainer(X_train).values)
+            xgb_shap_vals = np.asarray(xgb_explainer(X_train).values)
 
-        return {
-            "model_version": "ensemble_v1",
-            "sample_size": len(X_train),
-            "features": importance_list
-        }
+            ens_shap_vals = self.rf_weight * rf_shap_vals + (1.0 - self.rf_weight) * xgb_shap_vals
+
+            importance_list = calculate_global_shap_importance(
+                shap_matrix=ens_shap_vals,
+                feature_names=self.feature_order,
+                save_plot=True
+            )
+
+            res = {
+                "model_version": "ensemble_v1",
+                "sample_size": len(X_train),
+                "features": importance_list
+            }
+            self._cached_global_importance = res
+            return res
 
 
 # Singleton ExplanationService Instance
