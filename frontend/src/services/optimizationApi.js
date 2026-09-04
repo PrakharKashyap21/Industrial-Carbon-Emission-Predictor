@@ -1,4 +1,4 @@
-import api from './api';
+import api, { formatErrorMessage } from './api';
 
 export const runOptimization = async (payload) => {
   try {
@@ -7,7 +7,7 @@ export const runOptimization = async (payload) => {
   } catch (error) {
     return {
       success: false,
-      error: error.response?.data?.detail || error.message || 'Failed to run optimization search',
+      error: formatErrorMessage(error, 'Optimization Search Failed. Please check parameters or server status.'),
     };
   }
 };
@@ -19,7 +19,7 @@ export const getOptimizationHistory = async (params = {}) => {
   } catch (error) {
     return {
       success: false,
-      error: error.response?.data?.detail || error.message || 'Failed to fetch optimization history',
+      error: formatErrorMessage(error, 'Failed to fetch optimization history'),
     };
   }
 };
@@ -31,7 +31,7 @@ export const getOptimizationCandidates = async (optimizationId) => {
   } catch (error) {
     return {
       success: false,
-      error: error.response?.data?.detail || error.message || 'Failed to fetch candidate audit log',
+      error: formatErrorMessage(error, 'Failed to fetch candidate audit log'),
     };
   }
 };

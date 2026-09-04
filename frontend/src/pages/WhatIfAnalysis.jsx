@@ -37,21 +37,6 @@ export const WhatIfAnalysis = () => {
     if (baselineInputs) {
       setPrefilled(true);
     }
-
-    const initialChanges = baselineInputs
-      ? { electricity_consumption_kwh: -5 }
-      : { electricity_consumption_kwh: -10 };
-
-    handleRunSingle({
-      plant_id: plantIdParam,
-      baseline_features: baselineInputs,
-      scenario_name: 'Energy Efficiency (-10%)',
-      changes: initialChanges,
-      change_type: 'percentage',
-      constraints: { min_production_output: 2000 },
-    });
-
-    handleSensitivityChange('electricity_consumption_kwh', baselineInputs);
     fetchSavedHistory();
   }, [selectedPlantId, location.state]);
 
@@ -248,7 +233,19 @@ export const WhatIfAnalysis = () => {
           </div>
 
           {/* Active Tab Content */}
-          {activeTab === 'single' && (
+          {activeTab === 'single' && !singleResult && !loading && (
+            <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-8 shadow-xl text-center space-y-3">
+              <div className="w-12 h-12 rounded-full bg-cyan-950/80 border border-cyan-800/60 flex items-center justify-center mx-auto text-cyan-400">
+                <Sliders className="w-6 h-6" />
+              </div>
+              <h3 className="text-sm font-bold text-slate-200">Ready for Scenario Simulation</h3>
+              <p className="text-xs text-slate-400 max-w-md mx-auto">
+                Adjust the operating parameters in the What-if Scenario Builder on the left, then click <strong className="text-cyan-400">Run Single Simulation</strong> to calculate model-estimated CO₂ emission impact.
+              </p>
+            </div>
+          )}
+
+          {activeTab === 'single' && singleResult && (
             <ScenarioResult
               scenario={singleResult}
               onSave={handleSaveScenario}
@@ -257,7 +254,19 @@ export const WhatIfAnalysis = () => {
             />
           )}
 
-          {activeTab === 'compare' && (
+          {activeTab === 'compare' && !comparisonResult && !loading && (
+            <div className="bg-white border border-slate-200 rounded-2xl p-8 shadow-xs text-center space-y-3">
+              <div className="w-12 h-12 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center mx-auto text-slate-600">
+                <TableIcon className="w-6 h-6" />
+              </div>
+              <h3 className="text-sm font-bold text-slate-900">Multi-Scenario Comparison</h3>
+              <p className="text-xs text-slate-500 max-w-md mx-auto">
+                Compare multiple operating scenario presets side-by-side. Click <strong className="text-slate-800">Compare Presets Batch</strong> in the Scenario Builder on the left to evaluate all presets.
+              </p>
+            </div>
+          )}
+
+          {activeTab === 'compare' && comparisonResult && (
             <div className="space-y-6">
               {comparisonResult?.recommendation && (
                 <ScenarioRecommendation recommendation={comparisonResult.recommendation} />
@@ -266,7 +275,28 @@ export const WhatIfAnalysis = () => {
             </div>
           )}
 
-          {activeTab === 'sensitivity' && (
+          {activeTab === 'sensitivity' && !sensitivityResult && !loading && (
+            <div className="bg-white border border-slate-200 rounded-2xl p-8 shadow-xs text-center space-y-4">
+              <div className="w-12 h-12 rounded-full bg-cyan-50 border border-cyan-200 flex items-center justify-center mx-auto text-cyan-600">
+                <Activity className="w-6 h-6" />
+              </div>
+              <h3 className="text-sm font-bold text-slate-900">Single-Variable Sensitivity Analysis</h3>
+              <p className="text-xs text-slate-500 max-w-md mx-auto">
+                Evaluate how parameter changes (-20% to +10%) affect model-estimated CO₂ emissions.
+              </p>
+              <Button
+                variant="primary"
+                size="sm"
+                icon={Activity}
+                isLoading={loading}
+                onClick={() => handleSensitivityChange('electricity_consumption_kwh')}
+              >
+                Generate Sensitivity Curve
+              </Button>
+            </div>
+          )}
+
+          {activeTab === 'sensitivity' && sensitivityResult && (
             <ScenarioSensitivityChart
               sensitivityData={sensitivityResult}
               onFeatureChange={(feat) => handleSensitivityChange(feat)}

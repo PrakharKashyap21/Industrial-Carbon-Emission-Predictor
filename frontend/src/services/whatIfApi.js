@@ -1,4 +1,4 @@
-import api from './api';
+import api, { formatErrorMessage } from './api.js';
 
 export const predictScenario = async (payload) => {
   try {
@@ -7,7 +7,7 @@ export const predictScenario = async (payload) => {
   } catch (error) {
     return {
       success: false,
-      error: error.response?.data?.detail || error.message || 'Failed to simulate scenario',
+      error: formatErrorMessage(error, 'Failed to simulate scenario'),
     };
   }
 };
@@ -19,7 +19,7 @@ export const compareScenarios = async (payload) => {
   } catch (error) {
     return {
       success: false,
-      error: error.response?.data?.detail || error.message || 'Failed to compare scenarios',
+      error: formatErrorMessage(error, 'Failed to compare scenarios'),
     };
   }
 };
@@ -31,7 +31,7 @@ export const analyzeSensitivity = async (payload) => {
   } catch (error) {
     return {
       success: false,
-      error: error.response?.data?.detail || error.message || 'Failed to run sensitivity analysis',
+      error: formatErrorMessage(error, 'Failed to run sensitivity analysis'),
     };
   }
 };
@@ -43,7 +43,7 @@ export const saveScenario = async (payload) => {
   } catch (error) {
     return {
       success: false,
-      error: error.response?.data?.detail || error.message || 'Failed to save scenario',
+      error: formatErrorMessage(error, 'Failed to save scenario'),
     };
   }
 };
@@ -55,7 +55,7 @@ export const getSavedScenarios = async (params = {}) => {
   } catch (error) {
     return {
       success: false,
-      error: error.response?.data?.detail || error.message || 'Failed to fetch saved scenarios',
+      error: formatErrorMessage(error, 'Failed to fetch saved scenarios'),
     };
   }
 };

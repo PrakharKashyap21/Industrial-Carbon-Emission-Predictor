@@ -52,15 +52,14 @@ export const Optimization = () => {
     if (currentInputs) {
       setPrefilled(true);
     }
-    handleExecuteOptimization(currentInputs);
     fetchHistory();
   }, [selectedPlantId, location.state]);
 
-  const handleExecuteOptimization = async (customInputs = null) => {
+  const handleExecuteOptimization = async () => {
     setLoading(true);
     setError(null);
 
-    const currentInputs = customInputs || location.state?.currentInputs || location.state?.baselineInputs || null;
+    const currentInputs = location.state?.currentInputs || location.state?.baselineInputs || null;
 
     const payload = {
       plant_id: plantIdParam,
@@ -82,7 +81,9 @@ export const Optimization = () => {
       }
       fetchHistory();
     } else {
-      setError(res.error);
+      setOptimizationResult(null);
+      setAllCandidates([]);
+      setError(typeof res.error === 'string' ? res.error : 'Optimization Search Failed. Please try again.');
     }
   };
 
