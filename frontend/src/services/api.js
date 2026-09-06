@@ -99,6 +99,76 @@ export const getHealthCheck = async () => {
 };
 
 /**
+ * Perform a targeted backend readiness check to handle Render Free cold starts gracefully.
+ * - Warm backend: Responds immediately (<500ms) with 0 extra delay.
+ * - Waking backend: Retries up to maxAttempts at controlled intervals.
+ */
+export const checkBackendReadiness = async ({
+  maxAttempts = 8,
+  retryDelayMs = 3500,
+  onStatusUpdate = null,
+  isCancelled = () => false,
+} = {}) => {
+  // Attempt 1: Immediate health check
+  const firstCheck = await getHealthCheck();
+  if (firstCheck.success) {
+    return { ready: true, attempts: 1, latency: firstCheck.latency };
+  }
+
+  // If initial check fails, backend is likely waking from Render sleep
+  if (onStatusUpdate) {
+    onStatusUpdate({
+      isWaking: true,
+      attempt: 1,
+      maxAttempts,
+      message: 'AI Backend is starting...',
+      detail: 'The backend is waking up. This may take a little longer on the first request.',
+    });
+  }
+
+  for (let attempt = 2; attempt <= maxAttempts; attempt++) {
+    if (isCancelled()) {
+      return { ready: false, error: 'Readiness check cancelled.' };
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, retryDelayMs));
+
+    if (isCancelled()) {
+      return { ready: false, error: 'Readiness check cancelled.' };
+    }
+
+    if (onStatusUpdate) {
+      onStatusUpdate({
+        isWaking: true,
+        attempt,
+        maxAttempts,
+        message: 'AI Backend is starting...',
+        detail: `Waking up Render Free instance (Attempt ${attempt} of ${maxAttempts})...`,
+      });
+    }
+
+    const check = await getHealthCheck();
+    if (check.success) {
+      if (onStatusUpdate) {
+        onStatusUpdate({
+          isWaking: false,
+          attempt,
+          maxAttempts,
+          message: 'AI Backend is ready',
+          detail: 'Connection established successfully.',
+        });
+      }
+      return { ready: true, attempts, latency: check.latency };
+    }
+  }
+
+  return {
+    ready: false,
+    error: 'AI Backend service is currently unavailable. The server did not respond after startup retries.',
+  };
+};
+
+/**
  * Retrieve list of registered industrial plants.
  * GET /api/plants
  */

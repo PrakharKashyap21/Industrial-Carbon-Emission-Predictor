@@ -122,9 +122,22 @@ export const Header = ({ onSidebarToggle }) => {
           </div>
 
           {/* System Health Pill */}
-          <div className="hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium border bg-emerald-50 border-emerald-200 text-emerald-800">
-            <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-            <span>AI Backend: <strong className="font-mono">{healthStatus.latency}ms</strong></span>
+          <div className={`hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium border ${
+            healthStatus.online
+              ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+              : 'bg-amber-50 border-amber-200 text-amber-800'
+          }`}>
+            {healthStatus.online ? (
+              <>
+                <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                <span>AI Backend: <strong className="font-mono">{healthStatus.latency}ms</strong></span>
+              </>
+            ) : (
+              <>
+                <AlertCircle className="w-3 h-3 text-amber-600 animate-pulse" />
+                <span>AI Backend: <strong className="font-medium">Connecting...</strong></span>
+              </>
+            )}
           </div>
 
           {/* Notifications Dropdown */}

@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getDashboardOverview } from '../services/dashboardApi';
+import { checkBackendReadiness } from '../services/api';
 import { useFilter } from '../context/FilterContext';
 import KPIGrid from '../components/dashboard/KPIGrid';
 import EmissionTrendChart from '../components/dashboard/EmissionTrendChart';
@@ -18,7 +19,7 @@ import Button from '../components/ui/Button';
 import Badge from '../components/ui/Badge';
 import Alert from '../components/ui/Alert';
 import LoadingState from '../components/ui/LoadingState';
-import { RefreshCw, Cpu, SlidersHorizontal, FileText } from 'lucide-react';
+import { RefreshCw, Cpu, SlidersHorizontal, FileText, Loader2 } from 'lucide-react';
 
 export const Dashboard = () => {
   const { selectedPlantId, dateRange } = useFilter();
@@ -41,12 +42,49 @@ export const Dashboard = () => {
 
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [isWaking, setIsWaking] = useState(false);
+  const [wakingInfo, setWakingInfo] = useState(null);
   const [error, setError] = useState(null);
 
+  // Cancellation ref to prevent duplicate concurrent readiness checks
+  const activeCheckIdRef = useRef(0);
+
   const fetchData = async () => {
+    const currentCheckId = ++activeCheckIdRef.current;
     setLoading(true);
     setError(null);
+    setIsWaking(false);
+    setWakingInfo(null);
+
+    // 1. Lightweight readiness check (warm backend returns immediately)
+    const readiness = await checkBackendReadiness({
+      maxAttempts: 8,
+      retryDelayMs: 3500,
+      onStatusUpdate: (status) => {
+        if (currentCheckId === activeCheckIdRef.current) {
+          setIsWaking(status.isWaking);
+          setWakingInfo(status);
+        }
+      },
+      isCancelled: () => currentCheckId !== activeCheckIdRef.current,
+    });
+
+    if (currentCheckId !== activeCheckIdRef.current) return;
+
+    setIsWaking(false);
+    setWakingInfo(null);
+
+    if (!readiness.ready) {
+      setLoading(false);
+      setError(readiness.error || 'AI Backend service is unavailable.');
+      return;
+    }
+
+    // 2. Fetch main dashboard overview payload once backend is ready
     const res = await getDashboardOverview(plantParam, days);
+
+    if (currentCheckId !== activeCheckIdRef.current) return;
+
     setLoading(false);
     if (res.success) {
       setData(res.data);
@@ -57,6 +95,10 @@ export const Dashboard = () => {
 
   useEffect(() => {
     fetchData();
+    return () => {
+      // Increment check ID to cancel pending retries when dependencies change/unmount
+      activeCheckIdRef.current++;
+    };
   }, [selectedPlantId, dateRange]);
 
   return (
@@ -66,8 +108,8 @@ export const Dashboard = () => {
         title="Industrial Carbon Overview"
         subtitle="Real-time CO₂ emission tracking, ensemble predictive analytics, and plant performance KPIs"
         badge={
-          <Badge variant={error ? "warning" : "healthy"} dot>
-            {error ? "Service Delayed" : "System Operational"}
+          <Badge variant={isWaking ? "warning" : error ? "warning" : "healthy"} dot>
+            {isWaking ? "Backend Waking..." : error ? "Service Delayed" : "System Operational"}
           </Badge>
         }
       >
@@ -98,8 +140,21 @@ export const Dashboard = () => {
         </Button>
       </PageHeader>
 
+      {/* Render Cold-Start Waking Notice */}
+      {isWaking && (
+        <Alert
+          type="reliability"
+          title={wakingInfo?.message || "AI Backend is starting..."}
+        >
+          <div className="flex items-center gap-2 mt-0.5">
+            <Loader2 className="w-4 h-4 animate-spin text-indigo-600 shrink-0" />
+            <span>{wakingInfo?.detail || "The backend is waking up. This may take a little longer on the first request."}</span>
+          </div>
+        </Alert>
+      )}
+
       {/* Error Alert */}
-      {error && (
+      {error && !isWaking && (
         <Alert
           type="error"
           title="Unable to load dashboard analytics"
@@ -114,7 +169,7 @@ export const Dashboard = () => {
       )}
 
       {/* Loading Skeleton (Only during initial boot when no data exists yet) */}
-      {loading && !data && (
+      {loading && !data && !isWaking && (
         <LoadingState message="Fetching real-time industrial telemetry & carbon metrics..." type="card" />
       )}
 
