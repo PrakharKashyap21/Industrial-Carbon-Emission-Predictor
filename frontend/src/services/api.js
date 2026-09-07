@@ -109,14 +109,39 @@ export const checkBackendReadiness = async ({
   onStatusUpdate = null,
   isCancelled = () => false,
 } = {}) => {
+  if (isCancelled()) {
+    return {
+      success: false,
+      ready: false,
+      cancelled: true,
+      attempts: 0,
+      latency: 0,
+      error: 'Readiness check cancelled.',
+    };
+  }
+
   // Attempt 1: Immediate health check
   const firstCheck = await getHealthCheck();
   if (isCancelled()) {
-    return { ready: false, error: 'Readiness check cancelled.' };
+    return {
+      success: false,
+      ready: false,
+      cancelled: true,
+      attempts: 1,
+      latency: firstCheck?.latency || 0,
+      error: 'Readiness check cancelled.',
+    };
   }
 
   if (firstCheck.success) {
-    return { ready: true, attempts: 1, latency: firstCheck.latency };
+    return {
+      success: true,
+      ready: true,
+      cancelled: false,
+      attempts: 1,
+      latency: firstCheck.latency || 0,
+      error: null,
+    };
   }
 
   // If initial check fails, backend is likely waking from Render sleep
@@ -130,48 +155,80 @@ export const checkBackendReadiness = async ({
     });
   }
 
-  for (let attempt = 2; attempt <= maxAttempts; attempt++) {
+  for (let currentAttempt = 2; currentAttempt <= maxAttempts; currentAttempt++) {
     if (isCancelled()) {
-      return { ready: false, error: 'Readiness check cancelled.' };
+      return {
+        success: false,
+        ready: false,
+        cancelled: true,
+        attempts: currentAttempt - 1,
+        latency: 0,
+        error: 'Readiness check cancelled.',
+      };
     }
 
     await new Promise((resolve) => setTimeout(resolve, retryDelayMs));
 
     if (isCancelled()) {
-      return { ready: false, error: 'Readiness check cancelled.' };
+      return {
+        success: false,
+        ready: false,
+        cancelled: true,
+        attempts: currentAttempt - 1,
+        latency: 0,
+        error: 'Readiness check cancelled.',
+      };
     }
 
     if (onStatusUpdate) {
       onStatusUpdate({
         isWaking: true,
-        attempt,
+        attempt: currentAttempt,
         maxAttempts,
         message: 'AI Backend is starting...',
-        detail: `Waking up Render Free instance (Attempt ${attempt} of ${maxAttempts})...`,
+        detail: `Waking up Render Free instance (Attempt ${currentAttempt} of ${maxAttempts})...`,
       });
     }
 
     const check = await getHealthCheck();
     if (isCancelled()) {
-      return { ready: false, error: 'Readiness check cancelled.' };
+      return {
+        success: false,
+        ready: false,
+        cancelled: true,
+        attempts: currentAttempt,
+        latency: check?.latency || 0,
+        error: 'Readiness check cancelled.',
+      };
     }
 
     if (check.success) {
       if (onStatusUpdate) {
         onStatusUpdate({
           isWaking: false,
-          attempt,
+          attempt: currentAttempt,
           maxAttempts,
           message: 'AI Backend is ready',
           detail: 'Connection established successfully.',
         });
       }
-      return { ready: true, attempts, latency: check.latency };
+      return {
+        success: true,
+        ready: true,
+        cancelled: false,
+        attempts: currentAttempt,
+        latency: check.latency || 0,
+        error: null,
+      };
     }
   }
 
   return {
+    success: false,
     ready: false,
+    cancelled: false,
+    attempts: maxAttempts,
+    latency: 0,
     error: 'AI Backend service is currently unavailable. The server did not respond after startup retries.',
   };
 };

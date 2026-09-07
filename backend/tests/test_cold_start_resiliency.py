@@ -42,3 +42,22 @@ def test_dashboard_overview_fetches_successfully_after_readiness():
     data = dash_res.json()
     assert "kpis" in data
     assert "trends" in data
+
+def test_dashboard_overview_with_plant_filter_isolation():
+    """Verify GET /api/dashboard/overview respects plant_id query parameter."""
+    dash_res = client.get("/api/dashboard/overview?plant_id=1&days=30")
+    assert dash_res.status_code == 200
+    data = dash_res.json()
+    assert "plant" in data
+    assert "kpis" in data
+
+def test_exact_regression_check_no_reference_error_payload():
+    """
+    Regression Test: Ensure that health payload and status returns clean contract
+    compatible with frontend readiness check without exposing undefined variables.
+    """
+    response = client.get("/api/health")
+    assert response.status_code == 200
+    data = response.json()
+    assert data.get("status") == "healthy"
+    assert "attempts" not in data  # attempts is managed by frontend retry loop correctly

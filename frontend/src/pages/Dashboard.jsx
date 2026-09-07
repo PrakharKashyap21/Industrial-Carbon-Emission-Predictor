@@ -78,7 +78,9 @@ export const Dashboard = () => {
       if (requestId !== activeRequestIdRef.current) return;
 
       if (!readiness.ready) {
-        setError(readiness.error || 'AI Backend service is currently unavailable.');
+        if (!readiness.cancelled && requestId === activeRequestIdRef.current) {
+          setError(readiness.error || 'AI Backend service is currently unavailable.');
+        }
         return;
       }
 
