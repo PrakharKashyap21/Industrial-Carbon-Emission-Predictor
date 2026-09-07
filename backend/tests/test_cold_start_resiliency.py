@@ -22,3 +22,23 @@ def test_readiness_probe_returns_200():
     """Verify /api/health/ready returns status ready or not_ready without crashing."""
     response = client.get("/api/health/ready")
     assert response.status_code in [200, 503]
+
+def test_cold_start_readiness_contract():
+    """Verify health contract fields required by frontend checkBackendReadiness helper."""
+    response = client.get("/api/health")
+    assert response.status_code == 200
+    payload = response.json()
+    assert "status" in payload
+    assert payload["status"] == "healthy"
+    assert "service" in payload
+
+def test_dashboard_overview_fetches_successfully_after_readiness():
+    """Verify GET /api/dashboard/overview responds with 200 after readiness check."""
+    health_res = client.get("/api/health")
+    assert health_res.status_code == 200
+
+    dash_res = client.get("/api/dashboard/overview?days=30")
+    assert dash_res.status_code == 200
+    data = dash_res.json()
+    assert "kpis" in data
+    assert "trends" in data

@@ -46,58 +46,72 @@ export const Dashboard = () => {
   const [wakingInfo, setWakingInfo] = useState(null);
   const [error, setError] = useState(null);
 
-  // Cancellation ref to prevent duplicate concurrent readiness checks
-  const activeCheckIdRef = useRef(0);
+  // Cancellation & latest parameters ref for non-blocking readiness resolution
+  const activeRequestIdRef = useRef(0);
+  const latestParamsRef = useRef({ plantParam, days });
+
+  useEffect(() => {
+    latestParamsRef.current = { plantParam, days };
+  }, [plantParam, days]);
 
   const fetchData = async () => {
-    const currentCheckId = ++activeCheckIdRef.current;
+    const requestId = ++activeRequestIdRef.current;
     setLoading(true);
     setError(null);
     setIsWaking(false);
     setWakingInfo(null);
 
-    // 1. Lightweight readiness check (warm backend returns immediately)
-    const readiness = await checkBackendReadiness({
-      maxAttempts: 8,
-      retryDelayMs: 3500,
-      onStatusUpdate: (status) => {
-        if (currentCheckId === activeCheckIdRef.current) {
-          setIsWaking(status.isWaking);
-          setWakingInfo(status);
-        }
-      },
-      isCancelled: () => currentCheckId !== activeCheckIdRef.current,
-    });
+    try {
+      // 1. Lightweight backend readiness check (runs asynchronously)
+      const readiness = await checkBackendReadiness({
+        maxAttempts: 12,
+        retryDelayMs: 3500,
+        onStatusUpdate: (status) => {
+          if (requestId === activeRequestIdRef.current) {
+            setIsWaking(status.isWaking);
+            setWakingInfo(status);
+          }
+        },
+        isCancelled: () => requestId !== activeRequestIdRef.current,
+      });
 
-    if (currentCheckId !== activeCheckIdRef.current) return;
+      if (requestId !== activeRequestIdRef.current) return;
 
-    setIsWaking(false);
-    setWakingInfo(null);
+      if (!readiness.ready) {
+        setError(readiness.error || 'AI Backend service is currently unavailable.');
+        return;
+      }
 
-    if (!readiness.ready) {
-      setLoading(false);
-      setError(readiness.error || 'AI Backend service is unavailable.');
-      return;
-    }
+      // 2. Fetch main dashboard overview payload with LATEST filter selection once ready
+      const { plantParam: currentPlant, days: currentDays } = latestParamsRef.current;
+      const res = await getDashboardOverview(currentPlant, currentDays);
 
-    // 2. Fetch main dashboard overview payload once backend is ready
-    const res = await getDashboardOverview(plantParam, days);
+      if (requestId !== activeRequestIdRef.current) return;
 
-    if (currentCheckId !== activeCheckIdRef.current) return;
-
-    setLoading(false);
-    if (res.success) {
-      setData(res.data);
-    } else {
-      setError(res.error);
+      if (res.success) {
+        setData(res.data);
+      } else {
+        setError(res.error);
+      }
+    } catch (err) {
+      if (requestId === activeRequestIdRef.current) {
+        setError(err?.message || 'An unexpected error occurred while loading dashboard data.');
+      }
+    } finally {
+      // Guaranteed loading & waking state finalization ONLY for the active request
+      if (requestId === activeRequestIdRef.current) {
+        setLoading(false);
+        setIsWaking(false);
+        setWakingInfo(null);
+      }
     }
   };
 
   useEffect(() => {
     fetchData();
     return () => {
-      // Increment check ID to cancel pending retries when dependencies change/unmount
-      activeCheckIdRef.current++;
+      // Increment check ID to invalidate stale retries when dependencies change/unmount
+      activeRequestIdRef.current++;
     };
   }, [selectedPlantId, dateRange]);
 

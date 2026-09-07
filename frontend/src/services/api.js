@@ -104,13 +104,17 @@ export const getHealthCheck = async () => {
  * - Waking backend: Retries up to maxAttempts at controlled intervals.
  */
 export const checkBackendReadiness = async ({
-  maxAttempts = 8,
+  maxAttempts = 12,
   retryDelayMs = 3500,
   onStatusUpdate = null,
   isCancelled = () => false,
 } = {}) => {
   // Attempt 1: Immediate health check
   const firstCheck = await getHealthCheck();
+  if (isCancelled()) {
+    return { ready: false, error: 'Readiness check cancelled.' };
+  }
+
   if (firstCheck.success) {
     return { ready: true, attempts: 1, latency: firstCheck.latency };
   }
@@ -122,7 +126,7 @@ export const checkBackendReadiness = async ({
       attempt: 1,
       maxAttempts,
       message: 'AI Backend is starting...',
-      detail: 'The backend is waking up. This may take a little longer on the first request.',
+      detail: 'Waking up the AI backend. Your dashboard data will appear shortly.',
     });
   }
 
@@ -148,6 +152,10 @@ export const checkBackendReadiness = async ({
     }
 
     const check = await getHealthCheck();
+    if (isCancelled()) {
+      return { ready: false, error: 'Readiness check cancelled.' };
+    }
+
     if (check.success) {
       if (onStatusUpdate) {
         onStatusUpdate({
