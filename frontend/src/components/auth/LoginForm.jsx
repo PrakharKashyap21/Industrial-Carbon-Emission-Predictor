@@ -97,9 +97,9 @@ export const LoginForm = () => {
         </Link>
       </div>
 
-      {/* Quick Demo Credentials */}
+      {/* Quick Operator Credentials */}
       <div className="pt-4 border-t border-slate-100 space-y-2">
-        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block text-center">Quick Demo Credentials:</span>
+        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block text-center">Quick Operator Credentials:</span>
         <div className="grid grid-cols-2 gap-2 text-[10px] font-mono">
           <button
             onClick={() => fillQuickUser('admin@plant.com', 'admin123')}

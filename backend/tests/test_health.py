@@ -11,7 +11,7 @@ def test_health_check_returns_200():
     data = response.json()
     assert data["status"] == "healthy"
     assert data["service"] == "industrial-carbon-emission-api"
-    assert data["phase"] == "phase-1"
+    assert data["phase"] == "production"
 
 
 def test_cors_headers():

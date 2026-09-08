@@ -63,7 +63,7 @@ export const Header = ({ onSidebarToggle }) => {
     if (path.startsWith('/reports')) return 'Carbon Intelligence Reports';
     if (path.startsWith('/users')) return 'User & RBAC Administration';
     if (path.startsWith('/profile')) return 'User Profile & Settings';
-    return 'Industrial Carbon Emission System';
+    return 'Industrial Carbon Emission Prediction System';
   };
 
   return (

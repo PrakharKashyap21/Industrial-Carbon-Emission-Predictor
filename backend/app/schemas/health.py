@@ -13,9 +13,9 @@ class HealthCheckResponse(BaseModel):
         json_schema_extra={"example": "industrial-carbon-emission-api"}
     )
     phase: str = Field(
-        default="phase-1",
-        description="Current implementation phase of the project",
-        json_schema_extra={"example": "phase-1"}
+        default="production",
+        description="Deployment environment status",
+        json_schema_extra={"example": "production"}
     )
 
 

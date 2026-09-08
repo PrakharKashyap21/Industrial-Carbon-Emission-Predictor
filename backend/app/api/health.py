@@ -14,14 +14,14 @@ router = APIRouter(tags=["Health Monitoring"])
     response_model=HealthCheckResponse,
     status_code=status.HTTP_200_OK,
     summary="Backend Health Check",
-    description="Returns backend service health status, service name, and current phase."
+    description="Returns backend service health status, service name, and deployment status."
 )
 async def health_check() -> HealthCheckResponse:
     """GET /api/health endpoint returning health status."""
     return HealthCheckResponse(
         status="healthy",
         service="industrial-carbon-emission-api",
-        phase="phase-1"
+        phase="production"
     )
 
 
@@ -63,7 +63,7 @@ def readiness_probe(db: Session = Depends(get_db)) -> dict:
         "status": "ready",
         "database": "connected",
         "model": "loaded" if model_ready else "not_loaded",
-        "phase": "Phase 15 — Production Deployment",
+        "phase": "Production Deployment",
     }
 
 

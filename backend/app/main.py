@@ -35,8 +35,8 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="Industrial Carbon Emission Prediction API",
-    description="Backend API for Industrial Carbon Emission Prediction System — Phase 7 (Industrial Dashboard & Analytics)",
-    version="7.0.0",
+    description="Backend API for Industrial Carbon Emission Prediction System",
+    version="1.0.0",
     openapi_url=f"{settings.API_PREFIX}/openapi.json",
     docs_url="/docs",
     redoc_url="/redoc",

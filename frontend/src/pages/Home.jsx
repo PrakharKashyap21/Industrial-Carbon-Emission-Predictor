@@ -28,7 +28,7 @@ export const Home = () => {
           </p>
 
           <div className="pt-2 flex flex-wrap items-center gap-3 text-xs text-slate-400 font-mono">
-            <span className="px-2.5 py-1 bg-slate-800/80 rounded-md border border-slate-700">React + Vite</span>
+            <span className="px-2.5 py-1 bg-slate-800/80 rounded-md border border-slate-700">React</span>
             <span className="px-2.5 py-1 bg-slate-800/80 rounded-md border border-slate-700">FastAPI</span>
             <span className="px-2.5 py-1 bg-slate-800/80 rounded-md border border-slate-700">Axios</span>
             <span className="px-2.5 py-1 bg-slate-800/80 rounded-md border border-slate-700">Tailwind CSS</span>
@@ -62,7 +62,7 @@ export const Home = () => {
             </div>
             <h3 className="text-base font-bold text-slate-100 mb-1">Core Architecture</h3>
             <p className="text-xs text-slate-400 leading-relaxed mb-4">
-              Project structure, React/Vite frontend, FastAPI backend, CORS setup, and API health communication.
+              Industrial web application frontend, FastAPI backend, and real-time API health communication.
             </p>
             <span className="inline-flex items-center px-2.5 py-0.5 rounded text-[11px] font-bold bg-emerald-950 text-emerald-400 border border-emerald-800">
               Active Module
