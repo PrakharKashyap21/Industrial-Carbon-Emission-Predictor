@@ -1,5 +1,5 @@
 import React from 'react';
-import { Activity } from 'lucide-react';
+import { Activity, Loader2 } from 'lucide-react';
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
 
 export const ScenarioSensitivityChart = ({ sensitivityData, onFeatureChange, loading }) => {
@@ -15,7 +15,7 @@ export const ScenarioSensitivityChart = ({ sensitivityData, onFeatureChange, loa
   ];
 
   return (
-    <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-6">
+    <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-6 relative">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-4">
         <div>
           <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center">
@@ -27,35 +27,67 @@ export const ScenarioSensitivityChart = ({ sensitivityData, onFeatureChange, loa
           </p>
         </div>
 
-        <select
-          value={feature}
-          onChange={(e) => onFeatureChange(e.target.value)}
-          disabled={loading}
-          className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs text-cyan-700 font-semibold focus:border-cyan-500 focus:outline-none shadow-2xs"
-        >
-          {featureOptions.map((opt) => (
-            <option key={opt.value} value={opt.value}>
-              {opt.label}
-            </option>
-          ))}
-        </select>
+        <div className="flex items-center gap-2">
+          {loading && (
+            <span className="flex items-center gap-1 text-[11px] text-cyan-700 font-semibold animate-pulse">
+              <Loader2 className="w-3.5 h-3.5 animate-spin text-cyan-600" /> Updating Curve...
+            </span>
+          )}
+          <select
+            value={feature || 'electricity_consumption_kwh'}
+            onChange={(e) => onFeatureChange(e.target.value)}
+            disabled={loading}
+            className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs text-cyan-700 font-semibold focus:border-cyan-500 focus:outline-none shadow-2xs cursor-pointer disabled:opacity-50"
+          >
+            {featureOptions.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
-      <div className="h-64 w-full pt-2">
+      <div className="h-64 w-full pt-2 relative">
+        {loading && (
+          <div className="absolute inset-0 bg-white/60 backdrop-blur-[1px] z-10 flex items-center justify-center rounded-xl">
+            <div className="flex items-center gap-2 px-4 py-2 bg-slate-900 text-white rounded-xl text-xs font-semibold shadow-lg">
+              <Loader2 className="w-4 h-4 animate-spin text-cyan-400" />
+              <span>Calculating Model Sensitivity Response...</span>
+            </div>
+          </div>
+        )}
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={points} margin={{ top: 10, right: 20, left: 10, bottom: 20 }}>
+          <LineChart data={points} margin={{ top: 15, right: 25, left: 60, bottom: 25 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
             <XAxis
               dataKey="change_percentage"
               stroke="#64748b"
               tickFormatter={(v) => `${v}%`}
-              label={{ value: 'Parameter Change (%)', position: 'insideBottom', offset: -10, fill: '#475569', fontSize: 11 }}
+              label={{
+                value: 'Parameter Change (%)',
+                position: 'insideBottom',
+                offset: -15,
+                fill: '#475569',
+                fontSize: 11,
+                fontWeight: 600,
+              }}
             />
             <YAxis
               stroke="#64748b"
               domain={['auto', 'auto']}
               tickFormatter={(v) => `${Math.round(v)}`}
-              label={{ value: 'Predicted CO₂ (kg)', angle: -90, position: 'insideLeft', fill: '#475569', fontSize: 11 }}
+              tick={{ fontSize: 11, fill: '#64748b' }}
+              label={{
+                value: 'Predicted CO₂ (kg)',
+                angle: -90,
+                position: 'insideLeft',
+                offset: -45,
+                fill: '#475569',
+                fontSize: 11,
+                fontWeight: 600,
+                style: { textAnchor: 'middle' },
+              }}
             />
             <Tooltip
               contentStyle={{
@@ -88,3 +120,4 @@ export const ScenarioSensitivityChart = ({ sensitivityData, onFeatureChange, loa
 };
 
 export default ScenarioSensitivityChart;
+

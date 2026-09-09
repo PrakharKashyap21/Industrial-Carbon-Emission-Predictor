@@ -165,6 +165,7 @@ class ScenarioService:
         baseline_features, reading_id = self.get_baseline_features(db, baseline_id=baseline_id, plant_id=plant_id, custom_baseline=custom_base)
 
         points = []
+        baseline_pred_co2 = 0.0
         for change_pct in sorted(changes_list):
             sim_res = scenario_engine.simulate_scenario(
                 baseline_features=baseline_features,
@@ -173,6 +174,9 @@ class ScenarioService:
                 scenario_name=f"{feature} ({change_pct}%)",
             )
             rel_res = reliability_engine.evaluate_single_prediction_reliability(sim_res["scenario_inputs"])
+
+            if abs(change_pct) < 1e-6:
+                baseline_pred_co2 = sim_res["baseline_prediction"]
 
             points.append({
                 "change_percentage": change_pct,
@@ -183,10 +187,13 @@ class ScenarioService:
                 "reliability_status": rel_res["reliability_status"],
             })
 
+        if baseline_pred_co2 == 0.0 and points:
+            baseline_pred_co2 = points[0]["predicted_co2"]
+
         return {
             "baseline_id": reading_id,
             "feature": feature,
-            "baseline_prediction": points[0]["predicted_co2"] if points else 0.0,
+            "baseline_prediction": baseline_pred_co2,
             "points": points,
         }
 

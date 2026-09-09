@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Sliders, Activity, Table as TableIcon, BookmarkCheck, Play, AlertCircle, TrendingDown, RotateCcw, Copy, Trash2, Cpu } from 'lucide-react';
 import { predictScenario, compareScenarios, analyzeSensitivity, saveScenario, getSavedScenarios } from '../services/whatIfApi';
@@ -22,6 +22,7 @@ export const WhatIfAnalysis = () => {
 
   const [activeTab, setActiveTab] = useState('single');
   const [loading, setLoading] = useState(false);
+  const [sensitivityLoading, setSensitivityLoading] = useState(false);
   const [error, setError] = useState(null);
   const [prefilled, setPrefilled] = useState(false);
 
@@ -32,11 +33,14 @@ export const WhatIfAnalysis = () => {
   const [sensitivityResult, setSensitivityResult] = useState(null);
   const [savedScenarios, setSavedScenarios] = useState([]);
 
+  const sensitivityReqIdRef = useRef(0);
+
   useEffect(() => {
     const baselineInputs = location.state?.baselineInputs || null;
     if (baselineInputs) {
       setPrefilled(true);
     }
+    setSensitivityResult(null);
     fetchSavedHistory();
   }, [selectedPlantId, location.state]);
 
@@ -83,17 +87,34 @@ export const WhatIfAnalysis = () => {
   };
 
   const handleSensitivityChange = async (featureName, customBaseline = null) => {
-    setLoading(true);
-    const baselineInputs = customBaseline || location.state?.baselineInputs || null;
-    const res = await analyzeSensitivity({
-      plant_id: plantIdParam,
-      baseline_features: baselineInputs,
-      feature: featureName,
-      changes: [-20, -15, -10, -5, 0, 5, 10],
-    });
-    setLoading(false);
-    if (res.success) {
-      setSensitivityResult(res.data);
+    const reqId = ++sensitivityReqIdRef.current;
+    setSensitivityLoading(true);
+    setError(null);
+
+    try {
+      const baselineInputs = customBaseline || location.state?.baselineInputs || null;
+      const res = await analyzeSensitivity({
+        plant_id: plantIdParam,
+        baseline_features: baselineInputs,
+        feature: featureName,
+        changes: [-20, -15, -10, -5, 0, 5, 10],
+      });
+
+      if (reqId === sensitivityReqIdRef.current) {
+        if (res.success) {
+          setSensitivityResult(res.data);
+        } else {
+          setError(res.error);
+        }
+      }
+    } catch (err) {
+      if (reqId === sensitivityReqIdRef.current) {
+        setError(err?.message || 'Failed to run sensitivity analysis');
+      }
+    } finally {
+      if (reqId === sensitivityReqIdRef.current) {
+        setSensitivityLoading(false);
+      }
     }
   };
 
@@ -288,7 +309,7 @@ export const WhatIfAnalysis = () => {
                 variant="primary"
                 size="sm"
                 icon={Activity}
-                isLoading={loading}
+                isLoading={sensitivityLoading || loading}
                 onClick={() => handleSensitivityChange('electricity_consumption_kwh')}
               >
                 Generate Sensitivity Curve
@@ -300,7 +321,7 @@ export const WhatIfAnalysis = () => {
             <ScenarioSensitivityChart
               sensitivityData={sensitivityResult}
               onFeatureChange={(feat) => handleSensitivityChange(feat)}
-              loading={loading}
+              loading={sensitivityLoading || loading}
             />
           )}
 

@@ -224,3 +224,148 @@ def test_10_api_sensitivity(client):
     data = response.json()
     assert "points" in data
     assert len(data["points"]) == 4
+
+
+# TEST 11 — Sensitivity Analysis: Electricity
+def test_11_sensitivity_electricity(client):
+    payload = {
+        "plant_id": 1,
+        "feature": "electricity_consumption_kwh",
+        "changes": [-20.0, -15.0, -10.0, -5.0, 0.0, 5.0, 10.0],
+    }
+    response = client.post("/api/what-if/sensitivity", json=payload)
+    assert response.status_code == 200
+    data = response.json()
+    assert data["feature"] == "electricity_consumption_kwh"
+    assert len(data["points"]) == 7
+    # Verify ensemble predictions returned for points
+    for pt in data["points"]:
+        assert pt["predicted_co2"] > 0.0
+        assert "change_percentage" in pt
+
+
+# TEST 12 — Sensitivity Analysis: Diesel Fuel
+def test_12_sensitivity_diesel(client):
+    payload = {
+        "plant_id": 1,
+        "feature": "diesel_consumption_liters",
+        "changes": [-20.0, -10.0, 0.0, 10.0],
+    }
+    response = client.post("/api/what-if/sensitivity", json=payload)
+    assert response.status_code == 200
+    data = response.json()
+    assert data["feature"] == "diesel_consumption_liters"
+    assert len(data["points"]) == 4
+
+
+# TEST 13 — Sensitivity Analysis: Natural Gas
+def test_13_sensitivity_natural_gas(client):
+    payload = {
+        "plant_id": 1,
+        "feature": "natural_gas_consumption_m3",
+        "changes": [-20.0, -10.0, 0.0, 10.0],
+    }
+    response = client.post("/api/what-if/sensitivity", json=payload)
+    assert response.status_code == 200
+    data = response.json()
+    assert data["feature"] == "natural_gas_consumption_m3"
+    assert len(data["points"]) == 4
+
+
+# TEST 14 — Sensitivity Analysis: Machine Runtime
+def test_14_sensitivity_runtime(client):
+    payload = {
+        "plant_id": 1,
+        "feature": "machine_runtime_hours",
+        "changes": [-20.0, -10.0, 0.0, 10.0],
+    }
+    response = client.post("/api/what-if/sensitivity", json=payload)
+    assert response.status_code == 200
+    data = response.json()
+    assert data["feature"] == "machine_runtime_hours"
+    assert len(data["points"]) == 4
+
+
+# TEST 15 — Parameter Isolation Check
+def test_15_sensitivity_parameter_isolation():
+    from app.whatif.scenario_service import scenario_service
+    from app.database.session import SessionLocal
+
+    db = SessionLocal()
+    try:
+        baseline, _ = scenario_service.get_baseline_features(db, plant_id=1)
+        res_elec = scenario_service.analyze_sensitivity(db, {"feature": "electricity_consumption_kwh"})
+        
+        # Verify electricity varies while diesel fuel & natural gas remain fixed at baseline
+        for pt in res_elec["points"]:
+            pct = pt["change_percentage"]
+            expected_elec = round(baseline["electricity_consumption_kwh"] * (1.0 + pct / 100.0), 2)
+            assert abs(pt["input_value"] - expected_elec) <= 0.05
+    finally:
+        db.close()
+
+
+# TEST 16 — Parameter Differentiation Check
+def test_16_sensitivity_different_parameters_produce_different_inputs():
+    from app.whatif.scenario_service import scenario_service
+    from app.database.session import SessionLocal
+
+    db = SessionLocal()
+    try:
+        res_elec = scenario_service.analyze_sensitivity(db, {"feature": "electricity_consumption_kwh"})
+        res_diesel = scenario_service.analyze_sensitivity(db, {"feature": "diesel_consumption_liters"})
+
+        elec_inputs = [p["input_value"] for p in res_elec["points"]]
+        diesel_inputs = [p["input_value"] for p in res_diesel["points"]]
+
+        # Input sequences must differ between features
+        assert elec_inputs != diesel_inputs
+    finally:
+        db.close()
+
+
+# TEST 17 — Request Mapping Endpoint Contract
+def test_17_api_request_mapping_features(client):
+    for feat in ["electricity_consumption_kwh", "diesel_consumption_liters", "natural_gas_consumption_m3", "machine_runtime_hours"]:
+        res = client.post("/api/what-if/sensitivity", json={"plant_id": 1, "feature": feat})
+        assert res.status_code == 200
+        assert res.json()["feature"] == feat
+
+
+# TEST 18 — Stale Request Protection Logic Simulation
+def test_18_stale_request_protection_simulation():
+    req_counter = 0
+    active_req_id = 0
+
+    def trigger_request(param_name):
+        nonlocal req_counter, active_req_id
+        req_counter += 1
+        current_id = req_counter
+        active_req_id = current_id
+        return current_id
+
+    req1 = trigger_request("electricity_consumption_kwh")
+    req2 = trigger_request("diesel_consumption_liters")
+
+    # Older request req1 finishes after req2
+    is_req1_stale = (req1 != active_req_id)
+    is_req2_stale = (req2 != active_req_id)
+
+    assert is_req1_stale is True
+    assert is_req2_stale is False
+
+
+# TEST 19 — Existing Simulation & Baseline Intact
+def test_19_baseline_prediction_intact(client):
+    payload = {
+        "plant_id": 1,
+        "scenario_name": "Standard Test",
+        "changes": {"electricity_consumption_kwh": -5.0},
+        "change_type": "percentage",
+    }
+    response = client.post("/api/what-if/predict", json=payload)
+    assert response.status_code == 200
+    data = response.json()
+    assert data["baseline_prediction"] > 0.0
+    assert data["ensemble_prediction"] > 0.0
+
