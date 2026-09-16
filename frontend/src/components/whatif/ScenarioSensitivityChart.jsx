@@ -1,8 +1,11 @@
-import React from 'react';
-import { Activity, Loader2 } from 'lucide-react';
+import React, { useState } from 'react';
+import { Activity, Loader2, Download } from 'lucide-react';
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
+import { exportSensitivityCsv } from '../../services/whatIfApi';
 
 export const ScenarioSensitivityChart = ({ sensitivityData, onFeatureChange, loading }) => {
+  const [exporting, setExporting] = useState(false);
+
   if (!sensitivityData) return null;
 
   const { feature, points } = sensitivityData;
@@ -13,6 +16,29 @@ export const ScenarioSensitivityChart = ({ sensitivityData, onFeatureChange, loa
     { value: 'natural_gas_consumption_m3', label: 'Natural Gas Consumption (m³)' },
     { value: 'machine_runtime_hours', label: 'Machine Runtime (Hours)' },
   ];
+
+  const handleExportCsv = async () => {
+    if (!sensitivityData || exporting || loading) return;
+    setExporting(true);
+    try {
+      const res = await exportSensitivityCsv(sensitivityData);
+      if (res.success && res.data) {
+        const blob = new Blob([res.data], { type: 'text/csv;charset=utf-8;' });
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', 'sensitivity-analysis.csv');
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+      }
+    } catch (err) {
+      console.error('Failed to export sensitivity CSV:', err);
+    } finally {
+      setExporting(false);
+    }
+  };
 
   return (
     <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-6 relative">
@@ -36,7 +62,7 @@ export const ScenarioSensitivityChart = ({ sensitivityData, onFeatureChange, loa
           <select
             value={feature || 'electricity_consumption_kwh'}
             onChange={(e) => onFeatureChange(e.target.value)}
-            disabled={loading}
+            disabled={loading || exporting}
             className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs text-cyan-700 font-semibold focus:border-cyan-500 focus:outline-none shadow-2xs cursor-pointer disabled:opacity-50"
           >
             {featureOptions.map((opt) => (
@@ -45,6 +71,20 @@ export const ScenarioSensitivityChart = ({ sensitivityData, onFeatureChange, loa
               </option>
             ))}
           </select>
+          <button
+            type="button"
+            onClick={handleExportCsv}
+            disabled={!sensitivityData || loading || exporting}
+            className="inline-flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs text-slate-700 font-semibold hover:bg-slate-100 hover:text-cyan-700 focus:outline-none transition-colors shadow-2xs cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            title="Export Sensitivity Data as CSV"
+          >
+            {exporting ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin text-cyan-600" />
+            ) : (
+              <Download className="w-3.5 h-3.5 text-cyan-600" />
+            )}
+            <span>Export CSV</span>
+          </button>
         </div>
       </div>
 

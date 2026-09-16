@@ -67,7 +67,7 @@ class ExplanationService:
         # 2. Model Predictions
         rf_pred = float(np.maximum(0.0, self.rf_model.predict(X_input)[0]))
         xgb_pred = float(np.maximum(0.0, self.xgb_model.predict(X_input)[0]))
-        ens_pred = float(round(self.rf_weight * rf_pred + (1.0 - self.rf_weight) * xgb_pred, 2))
+        ens_pred = round(self.rf_weight * rf_pred + (1.0 - self.rf_weight) * xgb_pred, 2)
 
         # 3. SHAP Calculation
         rf_explainer = explainer_manager.get_rf_explainer(self.rf_model)
@@ -84,7 +84,7 @@ class ExplanationService:
         xgb_shap_vals = np.array(xgb_shap_obj.values[0])
 
         # 4. Ensemble SHAP Combination: w * RF_SHAP + (1-w) * XGB_SHAP
-        ens_base = float(round(self.rf_weight * rf_base + (1.0 - self.rf_weight) * xgb_base, 2))
+        ens_base = round(self.rf_weight * rf_base + (1.0 - self.rf_weight) * xgb_base, 2)
         ens_shap_vals = self.rf_weight * rf_shap_vals + (1.0 - self.rf_weight) * xgb_shap_vals
 
         # 5. Generate Local Explanation Payload

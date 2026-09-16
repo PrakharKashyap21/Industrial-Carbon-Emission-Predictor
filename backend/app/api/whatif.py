@@ -1,5 +1,5 @@
 from typing import Optional, List
-from fastapi import APIRouter, Depends, Query, HTTPException, status
+from fastapi import APIRouter, Depends, Query, HTTPException, status, Response
 from sqlalchemy.orm import Session
 
 from app.database.session import get_db
@@ -12,6 +12,7 @@ from app.schemas.whatif import (
     SensitivityResponse,
 )
 from app.whatif.scenario_service import scenario_service
+from app.whatif.scenario_exporter import scenario_exporter, SensitivityExportError
 
 router = APIRouter(prefix="/what-if", tags=["Advanced What-if Analysis & Scenario Simulation Engine"])
 
@@ -80,6 +81,37 @@ def analyze_sensitivity(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Sensitivity Analysis Error: {str(e)}"
+        )
+
+
+@router.post(
+    "/sensitivity/export",
+    status_code=status.HTTP_200_OK,
+    summary="Export Sensitivity Analysis Result to CSV",
+    description="Export generated single-variable sensitivity analysis curve data as a downloadable CSV file."
+)
+def export_sensitivity_csv(
+    payload: SensitivityResponse
+) -> Response:
+    """Export sensitivity analysis result as a downloadable CSV file."""
+    try:
+        csv_content = scenario_exporter.export_to_csv_string(payload.model_dump())
+        feat_slug = payload.feature.replace("_", "-") if payload.feature else "analysis"
+        filename = f"sensitivity-{feat_slug}.csv"
+        return Response(
+            content=csv_content,
+            media_type="text/csv",
+            headers={"Content-Disposition": f'attachment; filename="{filename}"'}
+        )
+    except SensitivityExportError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Sensitivity Export Error: {str(e)}"
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Sensitivity Export Server Error: {str(e)}"
         )
 
 

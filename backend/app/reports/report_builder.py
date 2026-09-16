@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Dict, Any, Optional
 from sqlalchemy.orm import Session
 from sqlalchemy import select, desc, func
@@ -17,7 +17,7 @@ def normalize_report_type(raw_type: str) -> str:
     """Map user-selected report type string to canonical type."""
     if not raw_type:
         return "EXECUTIVE"
-    u = str(raw_type).upper().strip()
+    u = raw_type.upper().strip()
     if u in ["EXECUTIVE", "EXECUTIVE_SUMMARY"]:
         return "EXECUTIVE"
     if u in ["ANALYTICS", "ANALYTICS_PERFORMANCE"]:
@@ -48,7 +48,7 @@ class ReportBuilder:
         """Route report data building based on normalized report_type."""
         r_type = normalize_report_type(report_type)
         if not period_end:
-            period_end = datetime.utcnow()
+            period_end = datetime.now(timezone.utc)
         if not period_start:
             period_start = period_end - timedelta(days=30)
 
@@ -67,7 +67,7 @@ class ReportBuilder:
             "plant_code": plant_code,
             "period_start": period_start.strftime("%Y-%m-%d"),
             "period_end": period_end.strftime("%Y-%m-%d"),
-            "generated_at": datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC"),
+            "generated_at": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC"),
             "disclaimer": DISCLAIMER_TEXT,
         }
 

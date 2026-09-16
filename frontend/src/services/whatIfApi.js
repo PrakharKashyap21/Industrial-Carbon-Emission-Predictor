@@ -36,6 +36,20 @@ export const analyzeSensitivity = async (payload) => {
   }
 };
 
+export const exportSensitivityCsv = async (payload) => {
+  try {
+    const response = await api.post('/what-if/sensitivity/export', payload, {
+      responseType: 'blob',
+    });
+    return { success: true, data: response.data };
+  } catch (error) {
+    return {
+      success: false,
+      error: formatErrorMessage(error, 'Failed to export sensitivity CSV'),
+    };
+  }
+};
+
 export const saveScenario = async (payload) => {
   try {
     const response = await api.post('/what-if/save', payload);
